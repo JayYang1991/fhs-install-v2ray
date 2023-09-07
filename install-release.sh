@@ -306,7 +306,12 @@ download_v2ray() {
     echo 'error: This version does not support verification. Please replace with another version.'
     return 1
   fi
-
+  DOWNLOAD_CONF_LINK="https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/server_config.json"
+  echo "Downloading V2Ray config: $DOWNLOAD_CONF_LINK"
+  if ! curl -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "${TMP_DIRECTORY}/server_config.json" "$DOWNLOAD_CONF_LINK"; then
+    echo 'error: Download failed! Please check your network or try again.'
+    return 1
+  fi
   # Verification of V2Ray archive
   CHECKSUM=$(awk -F '= ' '/256=/ {print $2}' < "${ZIP_FILE}.dgst")
   LOCALSUM=$(sha256sum "$ZIP_FILE" | awk '{printf $1}')
@@ -618,6 +623,7 @@ main() {
     echo 'installed: /etc/systemd/system/v2ray.service'
     echo 'installed: /etc/systemd/system/v2ray@.service'
   fi
+  cp -f $TMP_DIRECTORY/server_config.json ${JSON_PATH}/config.json
   "rm" -r "$TMP_DIRECTORY"
   echo "removed: $TMP_DIRECTORY"
   if [[ "$LOCAL_INSTALL" -eq '1' ]]; then
@@ -628,7 +634,9 @@ main() {
   if [[ "$V2RAY_RUNNING" -eq '1' ]]; then
     start_v2ray
   else
-    echo 'Please execute the command: systemctl enable v2ray; systemctl start v2ray'
+    # echo 'Please execute the command: systemctl enable v2ray; systemctl start v2ray'
+    systemctl enable v2ray
+    systemctl start v2ray
   fi
 }
 
