@@ -634,7 +634,9 @@ main() {
   if [[ "$V2RAY_RUNNING" -eq '1' ]]; then
     start_v2ray
   else
+    sed -i '/RestartPreventExitStatus/a\Environment=\"V2RAY_VMESS_AEAD_FORCED=false\"' /etc/systemd/system/v2ray.service
     # echo 'Please execute the command: systemctl enable v2ray; systemctl start v2ray'
+    systemctl daemon-reload
     systemctl enable v2ray
     systemctl start v2ray
     ufw disable
