@@ -1,0 +1,189 @@
+{
+    "log": {
+        "access": "/var/log/v2ray/access.log",
+        "error": "/var/log/v2ray/error.log",
+        "loglevel": "error"
+    },
+    "stats": {},
+    "api": {
+        "tag": "api",
+        "services": [
+            "StatsService"
+        ]
+    },
+    "policy": {
+        "levels": {
+            "0": {
+                "statsUserUplink": true,
+                "statsUserDownlink": true
+            }
+        },
+        "system": {
+            "statsInboundUplink": true,
+            "statsInboundDownlink": true,
+            "statsOutboundUplink": true,
+            "statsOutboundDownlink": true
+        }
+    },
+    "reverse": {
+        "portals": [
+            {
+                "tag": "ssl_portal",
+                "domain": "private.myssl.jason.com"
+            }
+        ]
+    },
+    "inbounds": [
+        {
+            "tag": "extern_ssl",
+            "port": 443,
+            "protocol": "dokodemo-door",
+            "settings": {
+                "address": "192.168.50.218",
+                "port": 2023,
+                "network": "tcp,udp"
+            }
+        },
+        {
+            "tag": "tunnel",
+            "port": 6688,
+            "protocol": "vmess",
+            "settings": {
+                "clients": [
+                    {
+                        "id": "c9915fcd-2dff-f1fc-28ea-5542507f24db",
+                        "alterId": 64
+                    }
+                ]
+            }
+        },
+        {
+            "tag": "proxy",
+            "port": 31523,
+            "protocol": "vmess",
+            "settings": {
+                "clients": [
+                    {
+                        "email": "jayyang1024@gmail.com",
+                        "id": "a1d10bc0-e3b0-4da5-8413-c25d9a06bc4b",
+                        "level": 0,
+                        "alterId": 4,
+                        "security": "auto"
+                    }
+                ]
+            },
+            "streamSettings": {
+                "network": "kcp",
+                "kcpSettings": {
+                    "header": {
+                        "type": "dtls"
+                    }
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls"
+                ]
+            }
+        },
+        {
+            "listen": "127.0.0.1",
+            "port": 10085,
+            "protocol": "dokodemo-door",
+            "settings": {
+                "address": "127.0.0.1"
+            },
+            "tag": "api"
+        }
+    ],
+    "outbounds": [
+        {
+            "protocol": "freedom",
+            "settings": {
+                "domainStrategy": "UseIP"
+            },
+            "tag": "direct"
+        },
+        {
+            "protocol": "blackhole",
+            "settings": {},
+            "tag": "blocked"
+        }
+    ],
+    "dns": {},
+    "routing": {
+        "domainStrategy": "IPOnDemand",
+        "rules": [
+            {
+                "type": "field",
+                "inboundTag": [
+                    "extern_ssl"
+                ],
+                "outboundTag": "ssl_portal"
+            },
+            {
+                "type": "field",
+                "inboundTag": [
+                    "tunnel"
+                ],
+                "domain": [
+                    "full:private.myssl.jason.com"
+                ],
+                "outboundTag": "ssl_portal"
+            },
+            {
+                "type": "field",
+                "domain": [
+                    "domain:epochtimes.com",
+                    "domain:epochtimes.com.tw",
+                    "domain:epochtimes.fr",
+                    "domain:epochtimes.de",
+                    "domain:epochtimes.jp",
+                    "domain:epochtimes.ru",
+                    "domain:epochtimes.co.il",
+                    "domain:epochtimes.co.kr",
+                    "domain:epochtimes-romania.com",
+                    "domain:erabaru.net",
+                    "domain:lagranepoca.com",
+                    "domain:theepochtimes.com",
+                    "domain:ntdtv.com",
+                    "domain:ntd.tv",
+                    "domain:ntdtv-dc.com",
+                    "domain:ntdtv.com.tw",
+                    "domain:minghui.org",
+                    "domain:renminbao.com",
+                    "domain:dafahao.com",
+                    "domain:dongtaiwang.com",
+                    "domain:falundafa.org",
+                    "domain:wujieliulan.com",
+                    "domain:ninecommentaries.com",
+                    "domain:shenyun.com"
+                ],
+                "outboundTag": "blocked"
+            },
+            {
+                "type": "field",
+                "protocol": [
+                    "bittorrent"
+                ],
+                "outboundTag": "blocked"
+            },
+            {
+                "inboundTag": [
+                    "api"
+                ],
+                "outboundTag": "api",
+                "type": "field"
+            }
+        ]
+    },
+    "transport": {
+        "kcpSettings": {
+            "uplinkCapacity": 100,
+            "downlinkCapacity": 100,
+            "congestion": true
+        }
+    }
+}
