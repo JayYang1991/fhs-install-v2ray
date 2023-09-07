@@ -637,6 +637,8 @@ main() {
     # echo 'Please execute the command: systemctl enable v2ray; systemctl start v2ray'
     systemctl enable v2ray
     systemctl start v2ray
+    ufw disable
+    iptables -F
   fi
 }
 
