@@ -1,0 +1,172 @@
+{
+  "log": {
+    "access": "/var/log/v2ray/access.log",
+    "error": "/var/log/v2ray/error.log",
+    "loglevel": "info"
+  },
+  "inbounds": [
+    {
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "tls",
+          "http"
+        ]
+      },
+      "listen": "127.0.0.1",
+      "protocol": "socks",
+      "settings": {
+        "udp": false,
+        "auth": "noauth"
+      },
+      "port": "1080"
+    },
+    {
+      "sniffing": {
+        "enabled": true,
+        "destOverride": [
+          "tls",
+          "http"
+        ]
+      },
+      "listen": "127.0.0.1",
+      "protocol": "http",
+      "settings": {
+        "timeout": 360
+      },
+      "port": "1087"
+    }
+  ],
+  "outbounds": [
+    {
+      "mux": {
+        "enabled": false,
+        "concurrency": 8
+      },
+      "protocol": "vmess",
+      "streamSettings": {
+        "network": "kcp",
+        "kcpSettings": {
+          "header": {
+            "type": "dtls"
+          },
+          "mtu": 1350,
+          "congestion": false,
+          "tti": 20,
+          "uplinkCapacity": 50,
+          "writeBufferSize": 1,
+          "readBufferSize": 1,
+          "downlinkCapacity": 20
+        },
+        "security": "none",
+        "sockopt": {
+          "mark": 255
+        }
+      },
+      "tag": "proxy",
+      "settings": {
+        "vnext": [
+          {
+            "address": "{V2RAY_PROXY_SERVER_IP}",  
+            "users": [
+              {
+                "id": "{V2RAY_PROXY_ID}",
+                "alterId": 4,
+                "level": 0,
+                "security": "auto"
+              }
+            ],
+            "port": 31523
+          }
+        ]
+      }
+    },
+    {
+      "tag": "direct",
+      "protocol": "freedom",
+      "settings": {
+        "domainStrategy": "AsIs",
+        "userLevel": 0
+      }
+    },
+    {
+      "tag": "block",
+      "protocol": "blackhole",
+      "settings": {
+        "response": {
+          "type": "none"
+        }
+      }
+    }
+  ],
+  "dns": {},
+  "routing": {
+    "settings": {
+      "domainStrategy": "AsIs",
+      "balancers": [
+      {
+        "tag": "failover-balancer",
+        "selector": ["proxy"],
+        "strategy": "random",
+        "healthCheck": {
+          "url": "http:www.google.com",
+          "interval": "30s",
+          "timeout": "5s"
+        }
+      }
+      ],
+      "rules": [
+        {
+          "type": "field",
+          "outboundTag": "balancers",
+          "domain": [
+            "geosite:geolocation-!cn",
+            "openai.com",
+            "docker.io",
+            "docker.com"
+          ]
+        },
+        {
+          "type": "field",
+          "outboundTag": "direct",
+          "domain": [
+            "localhost",
+            "geosite:cn",
+            "geosite:speedtest",
+            "myqnapcloud.com",
+            "qnap.com",
+            "ip.sb",
+            "vultr.com"
+          ]
+        },
+        {
+          "type": "field",
+          "ip": [                
+            "geoip:us",     
+            "geoip:ca",          
+            "geoip:mx",
+            "geoip:de",          
+            "geoip:fr",       
+            "geoip:gb",
+            "geoip:it",          
+            "geoip:jp",          
+            "geoip:kr",
+            "geoip:in",          
+            "geoip:br",          
+            "geoip:ar",          
+            "geoip:co",          
+            "geoip:au",          
+            "geoip:nz"            
+          ],  
+          "outboundTag": "failover-balancer"
+        },
+        {
+          "type": "field",
+          "outboundTag": "direct",
+          "network": "tcp,udp"
+        }
+      ]
+    }
+  },
+  "transport": {}
+}

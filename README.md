@@ -49,7 +49,12 @@ installed: /etc/systemd/system/v2ray@.service
 ### 移除 V2Ray
 
 ```
-# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-release.sh) --remove
+# v2ray api stats --server="127.0.0.1:10085"
+```
+
+### 流量统计命令
+```
+
 ```
 
 ### 解決問題
