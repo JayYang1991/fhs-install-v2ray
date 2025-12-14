@@ -19,9 +19,62 @@ eof
     echo "install v2ray $vps_ip success"
 }
 
+
+function check_ssh_until_success() {
+    local host="$1"
+    local port="${2:-22}"
+    local timeout="${3:-4}"
+    local max_attempts="${4:-60}"
+    local interval="${5:-5}"
+    
+    local attempt=1
+    local success=false
+    
+    while [[ $attempt -le $max_attempts && "$success" == false ]]; do
+        ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=$timeout -l root -p "$port" "$host" "echo 'SSH连接成功'" >/dev/null 2>&1
+        if [ $? -eq 0 ]; then
+            success=true
+            return 0
+        fi
+        
+        # 等待间隔时间再尝试
+        if [[ $attempt -lt $max_attempts ]]; then
+            sleep $interval
+        fi
+        
+        ((attempt++))
+    done
+    
+    return 1
+}
+
+function undate_local_v2ray_agent_config() {
+    local bash_config_file="~/.bashrc"
+    local v2ray_config_file="/usr/local/etc/v2ray/config.json"
+    local origin_v2ray_config_file="/tmp/proxy_client_config.json"
+    local download_config_link="https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/proxy_client_config.json"
+    echo "Downloading V2Ray config: $download_config_link"
+    if ! curl -R -H 'Cache-Control: no-cache' -o "$origin_v2ray_config_file" "$download_config_link"; then
+        echo 'error: Download failed! Please check your network or try again.'
+        return 1
+    fi
+    sed -i s/V2RAY_PROXY_SERVER_IP=.*/V2RAY_PROXY_SERVER_IP=$vps_ip/g $bash_config_file
+    sed -i s/\{V2RAY_PROXY_SERVER_IP\}/$vps_ip/g $origin_v2ray_config_file
+    sed -i s/\{V2RAY_PROXY_ID\}/${V2RAY_PROXY_ID}/g $origin_v2ray_config_file
+    sudo \cp $origin_v2ray_config_file $v2ray_config_file
+    sudo systemctl restart v2ray.service 
+    if [ $? -ne 0 ];then
+        echo 'restart v2ray failed.'
+        return 1
+    fi
+    echo "update local v2ray agent config success."
+    return 0
+}
+
 if [ ! -z "$vps_ip" ];then
     echo "vps $vps_ip is exist"
     install_v2ray
+    undate_local_v2ray_agent_config
     exit 0
 fi
 echo "begin to create instance"
@@ -30,13 +83,19 @@ if [ $? -ne 0 ];then
     echo "create instance failed."
     exit 1;
 fi
-sleep 30
+
 vps_ip=$(vultr-cli instance list | grep $my_lable | awk '{print $2}')
-if [ -z "$vps_ip" ];then
+while [ -z "$vps_ip" -o "$vps_ip" == "0.0.0.0" ];do
     echo "vps $vps_ip is not exist"
-    exit 1
-fi
+    sleep 2
+    vps_ip=$(vultr-cli instance list | grep $my_lable | awk '{print $2}')
+done
+
+check_ssh_until_success $vps_ip
 
 install_v2ray
+
+undate_local_v2ray_agent_config
+
 
 
