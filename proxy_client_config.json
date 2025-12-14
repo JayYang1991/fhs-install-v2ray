@@ -2,7 +2,17 @@
   "log": {
     "access": "/var/log/v2ray/access.log",
     "error": "/var/log/v2ray/error.log",
-    "loglevel": "info"
+    "loglevel": "error"
+  },
+  "observatory": {
+    "subjectSelector": [
+      "proxy", "direct"
+    ],
+    "probe": {
+      "timeout": "1s",
+      "interval": "30s",
+      "url": "https://www.google.com"
+    }
   },
   "inbounds": [
     {
@@ -87,13 +97,6 @@
             "port": 31523
           }
         ]
-      },
-      "healthCheck": { 
-        "enable": true,
-        "interval": "30s", 
-        "timeout": "10s",
-        "subnet": "20.0.0.0/8",
-        "fallbackSubnet": "100.64.0.0/10"
       }
     },
     {
@@ -108,23 +111,19 @@
   ],
   "dns": {},
   "routing": {
+    "balancers": [
+      {
+        "tag": "failover",
+        "selector": ["proxy", "direct"],
+        "strategy": {
+          "type": "leastping"
+        },
+        "fallbackTag": "direct"
+      }
+    ],
     "settings": {
       "domainStrategy": "AsIs",
       "rules": [
-        {
-          "type": "field",
-          "outboundTag": "proxy",
-          "domain": [
-            "geosite:geolocation-!cn",
-            "openai.com",
-            "docker.io",
-            "docker.com"
-          ],
-          "healthCheck": {
-            "enable": true,
-            "expectedStatus": "healthy"
-          }
-        },
         {
           "type": "field",
           "outboundTag": "direct",
@@ -140,6 +139,17 @@
         },
         {
           "type": "field",
+          "balancerTag": "failover",
+          "domain": [
+            "geosite:geolocation-!cn",
+            "openai.com",
+            "docker.io",
+            "docker.com"
+          ]
+        },
+        {
+          "type": "field",
+          "balancerTag": "failover",
           "ip": [                
             "geoip:us",     
             "geoip:ca",          
@@ -156,8 +166,7 @@
             "geoip:co",          
             "geoip:au",          
             "geoip:nz"            
-          ],  
-          "outboundTag": "proxy"
+          ]
         },
         {
           "type": "field",
