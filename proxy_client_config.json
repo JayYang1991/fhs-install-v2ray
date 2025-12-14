@@ -39,6 +39,15 @@
   ],
   "outbounds": [
     {
+      "tag": "direct",
+      "protocol": "freedom",
+      "settings": {
+        "domainStrategy": "AsIs",
+        "userLevel": 0
+      }
+    },
+    {
+      "tag": "proxy",
       "mux": {
         "enabled": false,
         "concurrency": 8
@@ -63,7 +72,6 @@
           "mark": 255
         }
       },
-      "tag": "proxy",
       "settings": {
         "vnext": [
           {
@@ -79,14 +87,13 @@
             "port": 31523
           }
         ]
-      }
-    },
-    {
-      "tag": "direct",
-      "protocol": "freedom",
-      "settings": {
-        "domainStrategy": "AsIs",
-        "userLevel": 0
+      },
+      "healthCheck": { 
+        "enable": true,
+        "interval": "30s", 
+        "timeout": "10s",
+        "subnet": "20.0.0.0/8",
+        "fallbackSubnet": "100.64.0.0/10"
       }
     },
     {
@@ -103,28 +110,20 @@
   "routing": {
     "settings": {
       "domainStrategy": "AsIs",
-      "balancers": [
-      {
-        "tag": "failover-balancer",
-        "selector": ["proxy"],
-        "strategy": "random",
-        "healthCheck": {
-          "url": "http:www.google.com",
-          "interval": "30s",
-          "timeout": "5s"
-        }
-      }
-      ],
       "rules": [
         {
           "type": "field",
-          "outboundTag": "balancers",
+          "outboundTag": "proxy",
           "domain": [
             "geosite:geolocation-!cn",
             "openai.com",
             "docker.io",
             "docker.com"
-          ]
+          ],
+          "healthCheck": {
+            "enable": true,
+            "expectedStatus": "healthy"
+          }
         },
         {
           "type": "field",
@@ -158,7 +157,7 @@
             "geoip:au",          
             "geoip:nz"            
           ],  
-          "outboundTag": "failover-balancer"
+          "outboundTag": "proxy"
         },
         {
           "type": "field",
