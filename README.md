@@ -8,7 +8,6 @@
 
 ```
 installed: /usr/local/bin/v2ray
-installed: /usr/local/bin/v2ctl
 installed: /usr/local/share/v2ray/geoip.dat
 installed: /usr/local/share/v2ray/geosite.dat
 installed: /usr/local/etc/v2ray/config.json
@@ -49,12 +48,18 @@ installed: /etc/systemd/system/v2ray@.service
 ### 移除 V2Ray
 
 ```
-# v2ray api stats --server="127.0.0.1:10085"
+# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-release.sh) --remove
 ```
 
 ### 流量统计命令
 ```
+# v2ray api stats --server="127.0.0.1:10085"
+```
 
+### 安装porxy客户端
+需要先设置V2RAY_PROXY_SERVER_IP、V2RAY_PROXY_ID环境变量
+```
+# sudo -E ./install-v2ray-proxy-client.sh -p socks5://192.168.0.1:1080
 ```
 
 ### 解決問題

@@ -628,8 +628,8 @@ main() {
   cp -f $TMP_DIRECTORY/proxy_client_config.json ${JSON_PATH}/config.json
   "rm" -r "$TMP_DIRECTORY"
   echo "removed: $TMP_DIRECTORY"
-  sed -i s/\{V2RAY_PROXY_SERVER_IP\}/${V2RAY_PROXY_SERVER_IP}/g
-  sed -i s/\{V2RAY_PROXY_ID\}/${V2RAY_PROXY_ID}/g
+  sed -i s/\{V2RAY_PROXY_SERVER_IP\}/${V2RAY_PROXY_SERVER_IP}/g ${JSON_PATH}/config.json
+  sed -i s/\{V2RAY_PROXY_ID\}/${V2RAY_PROXY_ID}/g ${JSON_PATH}/config.json
   if [[ "$LOCAL_INSTALL" -eq '1' ]]; then
     get_version
   fi
