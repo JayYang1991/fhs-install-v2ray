@@ -1,0 +1,107 @@
+{
+    "log": {
+        "access": "/var/log/v2ray/access.log",
+        "error": "/var/log/v2ray/error.log",
+        "loglevel": "debug"
+    },
+    "stats": {},
+    "api": {
+        "tag": "api",
+        "services": [
+            "StatsService"
+        ]
+    },
+    "policy": {
+        "levels": {
+            "0": {
+                "statsUserUplink": true,
+                "statsUserDownlink": true
+            }
+        },
+        "system": {
+            "statsInboundUplink": true,
+            "statsInboundDownlink": true,
+            "statsOutboundUplink": true,
+            "statsOutboundDownlink": true
+        }
+    },
+    "reverse": {
+        "portals": [
+	    {
+                "tag": "ssl_portal_desktop",
+                "domain": "private.desktop.jason.com"
+            }
+        ]
+    },
+    "inbounds": [
+        {
+            "tag": "extern_ssl",
+            "port": 443,
+            "protocol": "dokodemo-door",
+            "settings": {
+                "address": "127.0.0.1",
+                "port": 443,
+                "network": "tcp,udp"
+            }
+        },
+        {
+            "tag": "tunnel",
+            "port": 6688,
+            "protocol": "vmess",
+            "settings": {
+                "clients": [
+                    {
+                        "id": "{V2RAY_REVERSE_ID}",
+                        "alterId": 64
+                    }
+                ]
+            }
+        },
+        {
+            "listen": "127.0.0.1",
+            "port": 10085,
+            "protocol": "dokodemo-door",
+            "settings": {
+                "address": "127.0.0.1"
+            },
+            "tag": "api"
+        }
+    ],
+    "dns": {},
+    "routing": {
+        "domainStrategy": "IPOnDemand",
+        "rules": [
+            {
+                "type": "field",
+                "inboundTag": [
+                    "extern_ssl"
+                ],
+                "outboundTag": "ssl_portal_desktop"
+            },
+            {
+                "type": "field",
+                "inboundTag": [
+                    "tunnel"
+                ],
+                "domain": [
+                    "full:private.desktop.jason.com"
+                ],
+                "outboundTag": "ssl_portal_desktop"
+            },
+            {
+                "inboundTag": [
+                    "api"
+                ],
+                "outboundTag": "api",
+                "type": "field"
+            }
+        ]
+    },
+    "transport": {
+        "kcpSettings": {
+            "uplinkCapacity": 100,
+            "downlinkCapacity": 100,
+            "congestion": true
+        }
+    }
+}

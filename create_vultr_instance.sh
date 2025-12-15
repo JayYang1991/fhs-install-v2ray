@@ -62,6 +62,8 @@ function update_local_v2ray_agent_config() {
     sed -i s/V2RAY_PROXY_SERVER_IP=.*/V2RAY_PROXY_SERVER_IP=$vps_ip/g $bash_config_file
     sed -i s/\{V2RAY_PROXY_SERVER_IP\}/$vps_ip/g $origin_v2ray_config_file
     sed -i s/\{V2RAY_PROXY_ID\}/${V2RAY_PROXY_ID}/g $origin_v2ray_config_file
+    sed -i s/\{V2RAY_REVERSE_SERVER_IP\}/${V2RAY_REVERSE_SERVER_IP}/g $origin_v2ray_config_file
+    sed -i s/\{V2RAY_REVERSE_ID\}/${V2RAY_REVERSE_ID}/g $origin_v2ray_config_file
     sudo \cp $origin_v2ray_config_file $v2ray_config_file
     sudo systemctl restart v2ray.service 
     if [ $? -ne 0 ];then
