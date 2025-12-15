@@ -50,7 +50,7 @@ function check_ssh_until_success() {
 }
 
 function update_local_v2ray_agent_config() {
-    local bash_config_file="~/.bashrc"
+    local bash_config_file=$(ls ~/.bashrc)
     local v2ray_config_file="/usr/local/etc/v2ray/config.json"
     local origin_v2ray_config_file="/tmp/proxy_client_config.json"
     local download_config_link="https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/proxy_client_config.json"
