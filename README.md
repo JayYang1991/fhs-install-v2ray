@@ -31,24 +31,24 @@ installed: /etc/systemd/system/v2ray@.service
 
 * 該腳本在執行時會提供 `info` 和 `error` 等信息，請仔細閱讀。
 
-### 安裝和更新 V2Ray
+### 安装和更新 V2Ray代理服务端
 
 ```
-// 安裝執行檔和 .dat 資料檔
-# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-release.sh)
+// 安装执行文件和 .dat 数据文件
+# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray-proxy-server.sh)
 ```
 
-### 安裝最新發行的 geoip.dat 和 geosite.dat
+### 安装最新发行的 geoip.dat 和 geosite.dat
 
 ```
-// 只更新 .dat 資料檔
+// 只更新 .dat 数据文件
 # bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-dat-release.sh)
 ```
 
 ### 移除 V2Ray
 
 ```
-# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-release.sh) --remove
+# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray-proxy-server.sh) --remove
 ```
 
 ### 流量统计命令
@@ -56,10 +56,59 @@ installed: /etc/systemd/system/v2ray@.service
 # v2ray api stats --server="127.0.0.1:10085"
 ```
 
-### 安装porxy客户端
-需要先设置V2RAY_PROXY_SERVER_IP、V2RAY_PROXY_ID环境变量
+### 安装proxy客户端
+需要先设置V2RAY_PROXY_SERVER_IP、V2RAY_PROXY_ID、V2RAY_REVERSE_SERVER_IP、V2RAY_REVERSE_ID环境变量
 ```
 # sudo -E ./install-v2ray-proxy-client.sh -p socks5://192.168.0.1:1080
+```
+
+### 安装最新发行版 V2Ray
+
+```
+// 安装可执行文件和 .dat 数据文件
+# bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh)
+```
+
+### 安装特定版本的 V2Ray
+
+```
+// 安装指定版本的 V2Ray
+# bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) --version v4.18.0
+```
+
+### 检查 V2Ray 更新
+
+```
+// 检查是否有新版本
+# bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) -c
+```
+
+### 强制安装最新版 V2Ray
+
+```
+// 强制安装最新版本（即使已经是最新）
+# bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) -f
+```
+
+### 从本地文件安装 V2Ray
+
+```
+// 从本地文件安装 V2Ray
+# bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) -l /path/to/v2ray.zip
+```
+
+### 使用代理服务器下载
+
+```
+// 通过代理服务器下载
+# bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) -p http://127.0.0.1:8118
+```
+
+### 安装 V2Ray 的帮助信息
+
+```
+// 查看安装脚本的帮助信息
+# bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) --help
 ```
 
 ### 解決問題
