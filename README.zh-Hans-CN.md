@@ -63,6 +63,12 @@ installed: /etc/systemd/system/v2ray@.service
 # sudo -E ./install-v2ray-proxy-client.sh -p socks5://192.168.0.1:1080
 ```
 
+### 安装反向代理服务端
+需要先设置V2RAY_REVERSE_ID环境变量，同时在安装v2ray客户端的节点需要配置需要反向代理的域名解析到局域网IP，否则会导致报文循环处理
+```
+# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray-reverse-server.sh)
+```
+
 ### 安装最新发行版 V2Ray
 
 ```
