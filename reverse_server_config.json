@@ -76,6 +76,13 @@
             "tag": "api"
         }
     ],
+    "outbounds": [
+        {
+            "protocol": "blackhole",
+            "settings": {},
+            "tag": "blocked"
+        }
+    ],
     "dns": {},
     "routing": {
         "domainStrategy": "IPOnDemand",
@@ -128,6 +135,13 @@
                     "api"
                 ],
                 "outboundTag": "api",
+                "type": "field"
+            },
+            {
+                "inboundTag": [
+                    "extern_ssl"
+                ],
+                "outboundTag": "blocked",
                 "type": "field"
             }
         ]
