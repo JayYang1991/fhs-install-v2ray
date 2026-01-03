@@ -2,7 +2,7 @@
     "log": {
         "access": "/var/log/v2ray/access.log",
         "error": "/var/log/v2ray/error.log",
-        "loglevel": "debug"
+        "loglevel": "warning"
     },
     "stats": {},
     "api": {
@@ -30,6 +30,10 @@
 	    {
                 "tag": "ssl_portal_desktop",
                 "domain": "private.desktop.jason.com"
+            },
+	    {
+                "tag": "ssl_portal_nas",
+                "domain": "private.nas.jason.com"
             }
         ]
     },
@@ -42,6 +46,11 @@
                 "address": "127.0.0.1",
                 "port": 443,
                 "network": "tcp,udp"
+            },
+	    "sniffing": {
+                "enabled": true,
+                "destOverride": ["http","tls"],
+		"routeOnly": true
             }
         },
         {
@@ -52,7 +61,7 @@
                 "clients": [
                     {
                         "id": "{V2RAY_REVERSE_ID}",
-                        "alterId": 64
+                        "alterId": 0
                     }
                 ]
             }
@@ -75,6 +84,32 @@
                 "type": "field",
                 "inboundTag": [
                     "extern_ssl"
+                ],
+                "domain": [
+                    "qnap.jayyang.cn",
+                    "proxymgr.jayyang.cn",
+                    "www.jayyang.cn",
+		    "ubuntu.jayyang.cn"
+                ],
+                "outboundTag": "ssl_portal_nas"
+            },
+            {
+                "type": "field",
+                "inboundTag": [
+                    "tunnel"
+                ],
+                "domain": [
+                    "full:private.nas.jason.com"
+                ],
+                "outboundTag": "ssl_portal_nas"
+	    },
+	    {
+                "type": "field",
+                "inboundTag": [
+                    "extern_ssl"
+                ],
+		"domain": [
+                    "jayyang.cn"
                 ],
                 "outboundTag": "ssl_portal_desktop"
             },

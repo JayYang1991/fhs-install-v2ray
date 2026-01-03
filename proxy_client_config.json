@@ -118,7 +118,7 @@
             "users": [
               {
                 "id": "{V2RAY_REVERSE_ID}",
-                "alterId": 64
+                "alterId": 0
               }
             ]
           }

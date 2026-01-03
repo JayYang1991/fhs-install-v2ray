@@ -1,14 +1,14 @@
 #!/bin/bash
 # create
-my_region="nrt"
-my_plan="vc2-1c-1gb"
-my_os="1743"
+my_region="ewr"
+my_plan="vc2-1c-0.5gb-v6"
+my_os="2625"
 my_host="jayyang"
 my_lable="ubuntu_2204"
 my_tag="v2ray"
 my_ssh_keys="c5e8bf26-ab13-454a-a827-c2afff006a67,fa784b8e-c8d9-40d3-ab66-c7b0177a4013"
 vps_ip=$(vultr-cli instance list | grep $my_lable | awk '{print $2}')
-script_id="89005eb6-6e67-40fb-b873-c8399295f05e"
+script_id="b587aa57-c65c-4dbd-a7f9-903be3d7b0e7"
 
 function install_v2ray()
 {
@@ -74,6 +74,17 @@ function update_local_v2ray_agent_config() {
     return 0
 }
 
+function get_vps_ip6() {
+    local vps_id=$(vultr-cli instance list | grep $my_lable | awk '{print $1}')
+    if [ -z "$vps_id" ];then
+        return 0
+    fi
+    vps_ip=$(vultr-cli instance get $vps_id | grep "V6 MAIN IP" | awk '{print $4}')
+    return 0
+}
+
+
+get_vps_ip6
 if [ ! -z "$vps_ip" ];then
     echo "vps $vps_ip is exist"
     install_v2ray
@@ -91,7 +102,7 @@ vps_ip=$(vultr-cli instance list | grep $my_lable | awk '{print $2}')
 while [ -z "$vps_ip" -o "$vps_ip" == "0.0.0.0" ];do
     echo "vps $vps_ip is not exist"
     sleep 2
-    vps_ip=$(vultr-cli instance list | grep $my_lable | awk '{print $2}')
+    get_vps_ip6
 done
 
 check_ssh_until_success $vps_ip
