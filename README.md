@@ -1,13 +1,12 @@
 # fhs-install-v2ray
 
-> 欲查阅以简体中文撰写的介绍，请访问：[README.zh-Hans-CN.md](README.zh-Hans-CN.md)
-
 > Bash script for installing V2Ray in operating systems such as Debian / CentOS / Fedora / openSUSE that support systemd
 
-該腳本安裝的文件符合 [Filesystem Hierarchy Standard (FHS)](https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard)：
+该脚本安装的文件符合 [Filesystem Hierarchy Standard (FHS)](https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard)：
 
 ```
 installed: /usr/local/bin/v2ray
+installed: /usr/local/bin/v2ctl
 installed: /usr/local/share/v2ray/geoip.dat
 installed: /usr/local/share/v2ray/geosite.dat
 installed: /usr/local/etc/v2ray/config.json
@@ -18,25 +17,49 @@ installed: /etc/systemd/system/v2ray.service
 installed: /etc/systemd/system/v2ray@.service
 ```
 
+## 项目介绍
+
+本项目基于 [V2Fly 官方 fhs-install-v2ray](https://github.com/v2fly/fhs-install-v2ray) 项目，在标准安装功能的基础上，扩展了以下实用功能：
+
+- **代理服务端安装脚本** - 快速部署 V2Ray 代理服务器
+- **代理客户端安装脚本** - 配置客户端通过代理服务器访问网络
+- **反向代理服务端安装脚本** - 实现内网服务穿透，从外网访问局域网服务
+- **Vultr 自动化部署** - 一键创建云服务器并自动安装配置 V2Ray
+- **预置配置模板** - 提供常用场景的配置文件模板
+
 ## 重要提示
 
-**不推薦在 docker 中使用本專案安裝 v2ray，請直接使用 [官方映象](https://github.com/v2fly/docker)。**  
-如果官方映象不能滿足您自定義安裝的需要，請以**復刻並修改上游 dockerfile 的方式來實現**。  
+**不推荐在 docker 中使用本项目安装 v2ray，请直接使用 [官方镜像](https://github.com/v2fly/docker)。**  
+如果官方镜像不能满足您自定义安装的需要，请以**复刻并修改上游 dockerfile 的方式来实现**。
 
-本專案**不會為您自動生成配置檔案**；**只解決使用者安裝階段遇到的問題**。其他問題在這裡是無法得到幫助的。  
-請在安裝完成後參閱 [文件](https://www.v2fly.org/) 瞭解配置檔案語法，並自己完成適合自己的配置檔案。過程中可參閱社群貢獻的 [配置檔案模板](https://github.com/v2fly/v2ray-examples)  
-（**提請您注意這些模板複製下來以後是需要您自己修改調整的，不能直接使用**）
+本项目**不会为您自动生成配置文件**；**只解决用户安装阶段遇到的问题**。其他问题在这里是无法得到帮助的。  
+请在安装完成后参阅 [文档](https://www.v2fly.org/) 了解配置文件语法，并自己完成适合自己的配置文件。过程中可参阅社区贡献的 [配置文件模板](https://github.com/v2fly/v2ray-examples)  
+（**提请您注意这些模板复制下来以后是需要您自己修改调整的，不能直接使用**）
 
-## 使用
+## 支持的操作系统
 
-* 該腳本在執行時會提供 `info` 和 `error` 等信息，請仔細閱讀。
+- Debian 8+ / Ubuntu 16.04+
+- CentOS 7+ / Rocky Linux / AlmaLinux
+- Fedora 28+
+- openSUSE 15+
+- Arch Linux
 
-### 安装和更新 V2Ray代理服务端
+## 使用说明
+
+* 该脚本在运行时会提供 `info` 和 `error` 等信息，请仔细阅读。
+
+### 安装和更新 V2Ray 代理服务端
 
 ```
 // 安装执行文件和 .dat 数据文件
 # bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray-proxy-server.sh)
 ```
+
+**特性**：
+- 使用 VMess 协议，KCP 传输方式
+- 内置流量统计功能（通过 API）
+- 支持域名路由规则，可自定义分流策略
+- 预置常用域名黑名单
 
 ### 安装最新发行的 geoip.dat 和 geosite.dat
 
@@ -51,80 +74,283 @@ installed: /etc/systemd/system/v2ray@.service
 # bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray-proxy-server.sh) --remove
 ```
 
-### 流量统计命令
-```
-# v2ray api stats --server="127.0.0.1:10085"
-```
+### 安装 Proxy 客户端
 
-### 安装proxy客户端
-需要先设置V2RAY_PROXY_SERVER_IP、V2RAY_PROXY_ID、V2RAY_REVERSE_SERVER_IP、V2RAY_REVERSE_ID环境变量
-```
+在本地机器上安装客户端，通过代理服务器访问网络。
+
+**环境变量设置**（必须）：
+- `V2RAY_PROXY_SERVER_IP`: 代理服务器 IP 地址
+- `V2RAY_PROXY_ID`: VMess 用户 ID
+- `V2RAY_REVERSE_SERVER_IP`: 反向代理服务器 IP 地址（可选）
+- `V2RAY_REVERSE_ID`: 反向代理用户 ID（可选）
+
+```bash
+# 设置环境变量
+export V2RAY_PROXY_SERVER_IP="your-server-ip"
+export V2RAY_PROXY_ID="your-vmess-id"
+export V2RAY_REVERSE_SERVER_IP="your-reverse-server-ip"
+export V2RAY_REVERSE_ID="your-reverse-id"
+
+# 安装客户端
 # sudo -E ./install-v2ray-proxy-client.sh -p socks5://192.168.0.1:1080
 ```
 
-### 安装最新发行版 V2Ray
+**特性**：
+- 支持 SOCKS5 和 HTTP 代理协议
+- 内置流量健康检测和自动故障切换
+- 支持多出口负载均衡
+- 预置国内直连规则（geosite:cn）
+
+### 安装反向代理服务端
+
+实现内网穿透，从外网访问局域网内的服务。
+
+**环境变量设置**（必须）：
+- `V2RAY_REVERSE_ID`: 反向代理用户 ID
+
+```bash
+# 设置环境变量
+export V2RAY_REVERSE_ID="your-reverse-id"
+
+# 安装反向代理服务端
+# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray-reverse-server.sh)
+```
+
+**特性**：
+- 支持多域名反向代理
+- 使用 VMess 协议建立隧道
+- 基于 SNI 路由，支持 HTTPS 流量转发
+
+**注意事项**：
+- 在安装 V2Ray 客户端的节点需要配置需要反向代理的域名解析到局域网 IP
+- 否则会导致报文循环处理
+
+### 流量统计命令
+
+```bash
+# v2ray api stats --server="127.0.0.1:10085"
+```
+
+## Vultr 自动化部署
+
+本项目提供了 Vultr 云服务器自动化部署脚本，可一键创建服务器并自动安装 V2Ray 代理服务端。
+
+### 前置条件
+
+- 安装 [vultr-cli](https://github.com/vultr/vultr-cli) 工具
+- 配置 Vultr API Key
+- 准备 SSH 密钥
+
+### 使用方法
+
+```bash
+# 创建实例并安装 V2Ray
+# ./create_vultr_instance.sh
+```
+
+**脚本功能**：
+- 自动创建 Vultr 实例（默认配置：Ubuntu 22.04，1核 0.5GB）
+- 等待实例启动并检测 SSH 连接
+- 自动安装 V2Ray 代理服务端
+- 更新本地 V2Ray 客户端配置
+- 重启本地 V2Ray 服务
+
+**自定义配置**：
+编辑 `create_vultr_instance.sh` 修改以下变量：
+- `my_region`: 数据中心区域（默认：ewr）
+- `my_plan`: 实例规格（默认：vc2-1c-0.5gb-v6）
+- `my_os`: 操作系统 ID（默认：2625，Ubuntu 22.04）
+- `my_ssh_keys`: SSH 密钥 ID
+
+### 删除实例
+
+```bash
+# ./remove_vultr_instance.sh
+```
+
+## 安装最新发行版 V2Ray
 
 ```
 // 安装可执行文件和 .dat 数据文件
 # bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh)
 ```
 
-### 安装特定版本的 V2Ray
+## 安装特定版本的 V2Ray
 
 ```
 // 安装指定版本的 V2Ray
 # bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) --version v4.18.0
 ```
 
-### 检查 V2Ray 更新
+## 检查 V2Ray 更新
 
 ```
 // 检查是否有新版本
 # bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) -c
 ```
 
-### 强制安装最新版 V2Ray
+## 强制安装最新版 V2Ray
 
 ```
 // 强制安装最新版本（即使已经是最新）
 # bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) -f
 ```
 
-### 从本地文件安装 V2Ray
+## 从本地文件安装 V2Ray
 
 ```
 // 从本地文件安装 V2Ray
 # bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) -l /path/to/v2ray.zip
 ```
 
-### 使用代理服务器下载
+## 使用代理服务器下载
 
 ```
 // 通过代理服务器下载
 # bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) -p http://127.0.0.1:8118
 ```
 
-### 安装 V2Ray 的帮助信息
+## 安装 V2Ray 的帮助信息
 
 ```
 // 查看安装脚本的帮助信息
 # bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) --help
 ```
 
-### 解決問題
+## 配置文件模板
 
-* 「[不安裝或更新 geoip.dat 和 geosite.dat](https://github.com/v2fly/fhs-install-v2ray/wiki/Do-not-install-or-update-geoip.dat-and-geosite.dat)」。
-* 「[使用證書時權限不足](https://github.com/v2fly/fhs-install-v2ray/wiki/Insufficient-permissions-when-using-certificates)」。
-* 「[從舊腳本遷移至此](https://github.com/v2fly/fhs-install-v2ray/wiki/Migrate-from-the-old-script-to-this)」。
-* 「[將 .dat 文檔由 lib 目錄移動到 share 目錄](https://github.com/v2fly/fhs-install-v2ray/wiki/Move-.dat-files-from-lib-directory-to-share-directory)」。
-* 「[使用 VLESS 協議](https://github.com/v2fly/fhs-install-v2ray/wiki/To-use-the-VLESS-protocol)」。
+项目提供了多种配置文件模板，位于项目根目录：
 
-> 若您的問題沒有在上方列出，歡迎在 Issue 區提出。
+| 文件名 | 用途 |
+|--------|------|
+| `proxy_server_config.json` | 代理服务端配置 |
+| `proxy_client_config.json` | 代理客户端配置 |
+| `reverse_server_config.json` | 反向代理服务端配置 |
+| `reverse_client_config.json` | 反向代理客户端配置 |
+| `server_config.json` | 通用服务器配置 |
 
-**提問前請先閱讀 [Issue #63](https://github.com/v2fly/fhs-install-v2ray/issues/63)，否則可能無法得到解答並被鎖定。**
+**使用方法**：
+1. 下载对应的配置文件模板
+2. 替换占位符（如 `{V2RAY_PROXY_ID}`、`{V2RAY_PROXY_SERVER_IP}` 等）
+3. 复制到 `/usr/local/etc/v2ray/config.json`
+4. 重启 V2Ray 服务：`systemctl restart v2ray.service`
 
-## 貢獻
+## 常用命令
 
-請於 [develop](https://github.com/v2fly/fhs-install-v2ray/tree/develop) 分支進行，以避免對主分支造成破壞。
+```bash
+# 启动 V2Ray 服务
+# systemctl start v2ray.service
 
-待確定無誤後，兩分支將進行合併。
+# 停止 V2Ray 服务
+# systemctl stop v2ray.service
+
+# 重启 V2Ray 服务
+# systemctl restart v2ray.service
+
+# 查看 V2Ray 服务状态
+# systemctl status v2ray.service
+
+# 查看 V2Ray 日志
+# journalctl -u v2ray.service -f
+
+# 查看配置文件
+# cat /usr/local/etc/v2ray/config.json
+
+# 测试配置文件
+# v2ray -test -config /usr/local/etc/v2ray/config.json
+```
+
+## 环境变量
+
+### 通用路径变量
+
+```bash
+# 设置数据文件路径（默认：/usr/local/share/v2ray）
+export DAT_PATH='/usr/local/share/v2ray'
+
+# 设置配置文件路径（默认：/usr/local/etc/v2ray）
+export JSON_PATH='/usr/local/etc/v2ray'
+```
+
+### 代理服务端变量
+
+```bash
+# 代理服务器 IP（客户端配置时使用）
+export V2RAY_PROXY_SERVER_IP="your-server-ip"
+
+# VMess 用户 ID
+export V2RAY_PROXY_ID="your-vmess-id"
+```
+
+### 反向代理变量
+
+```bash
+# 反向代理服务器 IP
+export V2RAY_REVERSE_SERVER_IP="your-reverse-server-ip"
+
+# 反向代理用户 ID
+export V2RAY_REVERSE_ID="your-reverse-id"
+```
+
+## 解决问题
+
+* 「[不安装或更新 geoip.dat 和 geosite.dat](https://github.com/v2fly/fhs-install-v2ray/wiki/Do-not-install-or-update-geoip.dat-and-geosite-dat-zh-Hans-CN)」。
+* 「[使用证书时权限不足](https://github.com/v2fly/fhs-install-v2ray/wiki/Insufficient-permissions-when-using-certificates-zh-Hans-CN)」。
+* 「[从旧脚本迁移至此](https://github.com/v2fly/fhs-install-v2ray/wiki/Migrate-from-the-old-script-to-this-zh-Hans-CN)」。
+* 「[将 .dat 文档由 lib 目录移动到 share 目录](https://github.com/v2fly/fhs-install-v2ray/wiki/Move-.dat-files-from-lib-directory-to-share-directory-zh-Hans-CN)」。
+* 「[使用 VLESS 协议](https://github.com/v2fly/fhs-install-v2ray/wiki/To-use-the-VLESS-protocol-zh-Hans-CN)」。
+
+> 若您的问题没有在上方列出，欢迎在 Issue 区提出。
+
+**提问前请先阅读 [Issue #63](https://github.com/v2fly/fhs-install-v2ray/issues/63)，否则可能无法得到解答并被锁定。**
+
+## 开发与测试
+
+### Linting
+
+```bash
+# 使用 shellcheck 检查脚本
+shellcheck install-*.sh
+
+# 使用 shfmt 格式化脚本
+shfmt -i 2 -ci -sr -w install-*.sh
+```
+
+### 测试
+
+```bash
+# 完整安装测试（需要 sudo 权限）
+sudo bash install-release.sh
+sudo bash install-release.sh --check
+sudo bash install-dat-release.sh
+```
+
+**注意**：本项目没有单元测试，通过直接运行脚本进行测试。CI 通过 `.github/workflows/sh-checker.yml` 在 Ubuntu、Rocky Linux 和 Arch Linux 上自动运行测试。
+
+## 贡献
+
+请于 [develop](https://github.com/JayYang1991/fhs-install-v2ray/tree/develop) 分支进行，以避免对主分支造成破坏。
+
+待确定无误后，两分支将进行合并。
+
+## 代码风格
+
+- Shebang: `#!/usr/bin/env bash`
+- 缩进：2 个空格
+- 使用双引号包裹所有变量引用：`"$VARIABLE"`
+- 使用 `[[ ]]` 而非 `[ ]` 进行测试
+- 函数命名：snake_case
+- 常量命名：UPPER_CASE
+
+详见 [AGENTS.md](AGENTS.md)。
+
+## 许可证
+
+本项目基于 [V2Fly 官方项目](https://github.com/v2fly/fhs-install-v2ray) fork，遵循相同的许可证（GPL-3.0 或更高版本）。
+
+## 相关链接
+
+- [V2Fly 官方文档](https://www.v2fly.org/)
+- [V2Ray 配置示例](https://github.com/v2fly/v2ray-examples)
+- [V2Fly 官方 Docker 镜像](https://github.com/v2fly/docker)
+- [V2Fly fhs-install-v2ray](https://github.com/v2fly/fhs-install-v2ray)
