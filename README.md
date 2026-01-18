@@ -21,9 +21,10 @@ installed: /etc/systemd/system/v2ray@.service
 
 本项目基于 [V2Fly 官方 fhs-install-v2ray](https://github.com/v2fly/fhs-install-v2ray) 项目，在标准安装功能的基础上，扩展了以下实用功能：
 
-- **代理服务端安装脚本** - 快速部署 V2Ray 代理服务器
-- **代理客户端安装脚本** - 配置客户端通过代理服务器访问网络
-- **反向代理服务端安装脚本** - 实现内网服务穿透，从外网访问局域网服务
+- **统一安装脚本** - 一个脚本支持多种安装模式，通过 `--mode` 参数选择
+- **代理服务端安装** - 快速部署 V2Ray 代理服务器
+- **代理客户端安装** - 配置客户端通过代理服务器访问网络
+- **反向代理服务端安装** - 实现内网服务穿透，从外网访问局域网服务
 - **Vultr 自动化部署** - 一键创建云服务器并自动安装配置 V2Ray
 - **预置配置模板** - 提供常用场景的配置文件模板
 
@@ -48,11 +49,20 @@ installed: /etc/systemd/system/v2ray@.service
 
 * 该脚本在运行时会提供 `info` 和 `error` 等信息，请仔细阅读。
 
-### 安装和更新 V2Ray 代理服务端
+### 统一安装脚本
 
+本项目已将所有安装脚本合并为一个统一脚本 `install-v2ray.sh`，通过 `--mode` 参数选择不同的安装模式。
+
+```bash
+# 使用统一脚本安装
+# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) --mode <mode>
 ```
-// 安装执行文件和 .dat 数据文件
-# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray-proxy-server.sh)
+
+#### 安装 V2Ray 代理服务端
+
+```bash
+// 安装代理服务端
+# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) --mode proxy-server
 ```
 
 **特性**：
@@ -63,18 +73,26 @@ installed: /etc/systemd/system/v2ray@.service
 
 ### 安装最新发行的 geoip.dat 和 geosite.dat
 
+```bash
+// 只更新 .dat 数据文件（使用统一脚本）
+# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) --mode update-dat
 ```
+
+或者使用专用数据更新脚本：
+
+```bash
 // 只更新 .dat 数据文件
 # bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-dat-release.sh)
 ```
 
 ### 移除 V2Ray
 
-```
-# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray-proxy-server.sh) --remove
+```bash
+# 移除 V2Ray（所有模式）
+# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) --remove
 ```
 
-### 安装 Proxy 客户端
+#### 安装 V2Ray Proxy 客户端
 
 在本地机器上安装客户端，通过代理服务器访问网络。
 
@@ -92,7 +110,7 @@ export V2RAY_REVERSE_SERVER_IP="your-reverse-server-ip"
 export V2RAY_REVERSE_ID="your-reverse-id"
 
 # 安装客户端
-# sudo -E ./install-v2ray-proxy-client.sh -p socks5://192.168.0.1:1080
+# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) --mode proxy-client
 ```
 
 **特性**：
@@ -101,7 +119,7 @@ export V2RAY_REVERSE_ID="your-reverse-id"
 - 支持多出口负载均衡
 - 预置国内直连规则（geosite:cn）
 
-### 安装反向代理服务端
+#### 安装 V2Ray 反向代理服务端
 
 实现内网穿透，从外网访问局域网内的服务。
 
@@ -113,7 +131,7 @@ export V2RAY_REVERSE_ID="your-reverse-id"
 export V2RAY_REVERSE_ID="your-reverse-id"
 
 # 安装反向代理服务端
-# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray-reverse-server.sh)
+# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) --mode reverse-server
 ```
 
 **特性**：
@@ -168,53 +186,53 @@ export V2RAY_REVERSE_ID="your-reverse-id"
 # ./remove_vultr_instance.sh
 ```
 
-## 安装最新发行版 V2Ray
+## 安装标准版 V2Ray
 
-```
-// 安装可执行文件和 .dat 数据文件
-# bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh)
+```bash
+// 安装标准版 V2Ray（默认模式）
+# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh)
 ```
 
 ## 安装特定版本的 V2Ray
 
-```
+```bash
 // 安装指定版本的 V2Ray
-# bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) --version v4.18.0
+# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) --version v4.18.0
 ```
 
 ## 检查 V2Ray 更新
 
-```
+```bash
 // 检查是否有新版本
-# bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) -c
+# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) -c
 ```
 
 ## 强制安装最新版 V2Ray
 
-```
+```bash
 // 强制安装最新版本（即使已经是最新）
-# bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) -f
+# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) -f
 ```
 
 ## 从本地文件安装 V2Ray
 
-```
+```bash
 // 从本地文件安装 V2Ray
-# bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) -l /path/to/v2ray.zip
+# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) -l /path/to/v2ray.zip
 ```
 
 ## 使用代理服务器下载
 
-```
+```bash
 // 通过代理服务器下载
-# bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) -p http://127.0.0.1:8118
+# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) -p http://127.0.0.1:8118
 ```
 
 ## 安装 V2Ray 的帮助信息
 
-```
+```bash
 // 查看安装脚本的帮助信息
-# bash <(curl -L https://raw.githubusercontent.com/v2fly/fhs-install-v2ray/master/install-release.sh) --help
+# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) --help
 ```
 
 ## 配置文件模板
