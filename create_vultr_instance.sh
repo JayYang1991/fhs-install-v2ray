@@ -14,7 +14,7 @@ function install_v2ray()
 {
     echo "begin to install v2ray"
     ssh -T -o StrictHostKeyChecking=no root@${vps_ip} 2>&1 << eof
-    bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray-proxy-server.sh)
+    bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) --mode proxy-server
     exit
 eof
     echo "install v2ray $vps_ip success"
