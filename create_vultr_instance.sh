@@ -50,17 +50,36 @@ check_dependencies() {
     done
 }
 
+is_private_ip() {
+    local ip=$1
+    # Check for RFC 1918 (10.x, 172.16-31.x, 192.168.x) and CGNAT (100.64-127.x)
+    if [[ $ip =~ ^10\. ]] || \
+       [[ $ip =~ ^172\.(1[6-9]|2[0-9]|3[0-1])\. ]] || \
+       [[ $ip =~ ^192\.168\. ]] || \
+       [[ $ip =~ ^100\.(6[4-9]|[7-9][0-9]|1[0-1][0-9]|12[0-7])\. ]]; then
+        return 0
+    fi
+    return 1
+}
+
 get_vps_ip() {
     log "Fetching VPS IP for label: $MY_LABEL..."
     # Try IPv4 first
     VPS_IP=$(vultr-cli instance list | grep "$MY_LABEL" | awk '{print $2}')
     
-    # If IPv4 is missing or 0.0.0.0, try getting it via instance ID
-    if [[ -z "$VPS_IP" || "$VPS_IP" == "0.0.0.0" ]]; then
-        local vps_id
-        vps_id=$(vultr-cli instance list | grep "$MY_LABEL" | awk '{print $1}')
+    local vps_id=$(vultr-cli instance list | grep "$MY_LABEL" | awk '{print $1}')
+
+    # If IPv4 is missing, 0.0.0.0, or a private IP, try getting IPv6
+    if [[ -z "$VPS_IP" || "$VPS_IP" == "0.0.0.0" ]] || is_private_ip "$VPS_IP"; then
+        log "IPv4 ($VPS_IP) is invalid or private. Attempting to fetch IPv6..."
         if [[ -n "$vps_id" ]]; then
-            VPS_IP=$(vultr-cli instance get "$vps_id" | grep "MAIN IP" | head -n1 | awk '{print $4}')
+            # Try specific IPv6 list first
+            VPS_IP=$(vultr-cli instance ipv6 list "$vps_id" | grep -v "IP" | grep -v "==" | head -n1 | awk '{print $1}')
+            
+            # If still empty, try instance get
+            if [[ -z "$VPS_IP" ]]; then
+                VPS_IP=$(vultr-cli instance get "$vps_id" | grep "V6 MAIN IP" | awk '{print $4}')
+            fi
         fi
     fi
     
