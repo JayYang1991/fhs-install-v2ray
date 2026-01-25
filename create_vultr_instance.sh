@@ -20,6 +20,18 @@ GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
 # --- Helper Functions ---
+show_help() {
+    echo "Usage: $0 [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  -u, --update-local    Enable local V2Ray configuration update (default: disabled)"
+    echo "  -h, --help            Show this help message"
+    echo ""
+    echo "Environment Variables:"
+    echo "  VULTR_REGION, VULTR_PLAN, VULTR_OS, VULTR_SSH_KEYS, VULTR_SCRIPT_ID"
+    echo "  ENABLE_LOCAL_CONFIG=true (Alternative way to enable local update)"
+}
+
 log() {
     echo -e "${GREEN}[INFO]${NC} $1"
 }
@@ -142,6 +154,15 @@ update_local_v2ray_agent_config() {
 
 # --- Main Logic ---
 main() {
+    # Parse Arguments
+    while [[ "$#" -gt 0 ]]; do
+        case $1 in
+            -u|--update-local) ENABLE_LOCAL_CONFIG="true"; shift ;;
+            -h|--help) show_help; exit 0 ;;
+            *) warn "Unknown parameter passed: $1"; show_help; exit 1 ;;
+        esac
+    done
+
     check_dependencies
 
     if get_vps_ip; then
