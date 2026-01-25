@@ -529,6 +529,7 @@ show_help() {
   echo '  --mode proxy-server  Install V2Ray proxy server with proxy_server_config.json'
   echo '  --mode proxy-client  Install V2Ray proxy client with proxy_client_config.json'
   echo '  --mode reverse-server Install V2Ray reverse proxy server with reverse_server_config.json'
+  echo '  --mode update-dat     Update geoip.dat and geosite.dat only'
   echo ''
   echo 'Options:'
   echo '  --remove          Remove V2Ray'
@@ -562,6 +563,48 @@ main() {
   [[ "$CHECK" -eq '1' ]] && check_update
   [[ "$REMOVE" -eq '1' ]] && remove_v2ray
   
+  if [[ "$INSTALL_MODE" == 'update-dat' ]]; then
+    install_software 'curl' 'curl'
+    DOWNLOAD_LINK_GEOIP="https://github.com/v2fly/geoip/releases/latest/download/geoip.dat"
+    DOWNLOAD_LINK_GEOSITE="https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat"
+    file_ip='geoip.dat'
+    file_dlc='dlc.dat'
+    file_site='geosite.dat'
+    dir_tmp="$(mktemp -d)"
+    echo "info: Updating geoip.dat and geosite.dat..."
+    if ! curl -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "${dir_tmp}/${file_ip}" "${DOWNLOAD_LINK_GEOIP}"; then
+      echo 'error: Download failed! Please check your network or try again.'
+      exit 1
+    fi
+    if ! curl -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "${dir_tmp}/${file_dlc}" "${DOWNLOAD_LINK_GEOSITE}"; then
+      echo 'error: Download failed! Please check your network or try again.'
+      exit 1
+    fi
+    if ! curl -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "${dir_tmp}/${file_ip}.sha256sum" "${DOWNLOAD_LINK_GEOIP}.sha256sum"; then
+      echo 'error: Download failed! Please check your network or try again.'
+      exit 1
+    fi
+    if ! curl -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "${dir_tmp}/${file_dlc}.sha256sum" "${DOWNLOAD_LINK_GEOSITE}.sha256sum"; then
+      echo 'error: Download failed! Please check your network or try again.'
+      exit 1
+    fi
+    (
+      cd "${dir_tmp}" || exit
+      for i in *.sha256sum; do
+        if ! sha256sum -c "${i}"; then
+          echo 'error: Check failed! Please check your network or try again.'
+          exit 1
+        fi
+      done
+    )
+    install -d "$DAT_PATH"
+    install -m 644 "${dir_tmp}/${file_dlc}" "${DAT_PATH}/${file_site}"
+    install -m 644 "${dir_tmp}/${file_ip}" "${DAT_PATH}/${file_ip}"
+    rm -r "${dir_tmp}"
+    echo "info: geoip.dat and geosite.dat updated."
+    exit 0
+  fi
+
   TMP_DIRECTORY="$(mktemp -d)"
   ZIP_FILE="${TMP_DIRECTORY}/v2ray-linux-$MACHINE.zip"
   
