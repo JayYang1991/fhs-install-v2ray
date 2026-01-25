@@ -11,6 +11,7 @@ MY_TAG="${VULTR_TAG:-v2ray}"
 MY_SSH_KEYS="${VULTR_SSH_KEYS:-c5e8bf26-ab13-454a-a827-c2afff006a67,fa784b8e-c8d9-40d3-ab66-c7b0177a4013}"
 SCRIPT_ID="${VULTR_SCRIPT_ID:-b587aa57-c65c-4dbd-a7f9-903be3d7b0e7}"
 REPO_BRANCH="${V2RAY_REPO_BRANCH:-master}"
+ENABLE_LOCAL_CONFIG="${ENABLE_LOCAL_CONFIG:-false}"
 
 # --- Internal Variables ---
 VPS_IP=""
@@ -165,7 +166,12 @@ main() {
     fi
 
     install_v2ray
-    update_local_v2ray_agent_config
+    
+    if [[ "$ENABLE_LOCAL_CONFIG" == "true" ]]; then
+        update_local_v2ray_agent_config
+    else
+        log "Skipping local configuration update (ENABLE_LOCAL_CONFIG is not true)."
+    fi
 }
 
 main "$@"
