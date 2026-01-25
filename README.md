@@ -71,18 +71,13 @@ installed: /etc/systemd/system/v2ray@.service
 - 支持域名路由规则，可自定义分流策略
 - 预置常用域名黑名单
 
-### 安装最新发行的 geoip.dat 和 geosite.dat
+### 更新 geoip.dat 和 geosite.dat
+
+可以使用统一脚本仅更新数据文件：
 
 ```bash
-// 只更新 .dat 数据文件（使用统一脚本）
-# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) --mode update-dat
-```
-
-或者使用专用数据更新脚本：
-
-```bash
-// 只更新 .dat 数据文件
-# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-dat-release.sh)
+# 更新 .dat 数据文件
+bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) --mode update-dat
 ```
 
 ### 移除 V2Ray
@@ -162,23 +157,32 @@ export V2RAY_REVERSE_ID="your-reverse-id"
 ### 使用方法
 
 ```bash
-# 创建实例并安装 V2Ray
+# 查看帮助
+# ./create_vultr_instance.sh --help
+
+# 创建实例并安装 V2Ray（默认不更新本地配置）
 # ./create_vultr_instance.sh
+
+# 创建实例并自动更新本地 V2Ray 客户端配置
+# ./create_vultr_instance.sh --update-local
 ```
 
 **脚本功能**：
+- 自动检测并安装依赖 (`vultr-cli`, `curl` 等)
 - 自动创建 Vultr 实例（默认配置：Ubuntu 22.04，1核 0.5GB）
+- 支持 IPv4 和 IPv6 地址自动提取
 - 等待实例启动并检测 SSH 连接
-- 自动安装 V2Ray 代理服务端
-- 更新本地 V2Ray 客户端配置
-- 重启本地 V2Ray 服务
+- 自动在远程服务器安装 V2Ray 服务端
+- （可选）自动更新本地 V2Ray 客户端配置并重启服务
 
 **自定义配置**：
-编辑 `create_vultr_instance.sh` 修改以下变量：
-- `my_region`: 数据中心区域（默认：ewr）
-- `my_plan`: 实例规格（默认：vc2-1c-0.5gb-v6）
-- `my_os`: 操作系统 ID（默认：2625，Ubuntu 22.04）
-- `my_ssh_keys`: SSH 密钥 ID
+可以通过设置环境变量或编辑脚本修改以下变量：
+- `VULTR_REGION`: 数据中心区域（默认：ewr）
+- `VULTR_PLAN`: 实例规格（默认：vc2-1c-0.5gb-v6）
+- `VULTR_OS`: 操作系统 ID（默认：2625，Ubuntu 22.04）
+- `VULTR_SSH_KEYS`: SSH 密钥 ID
+- `VULTR_SCRIPT_ID`: 启动脚本 ID
+- `ENABLE_LOCAL_CONFIG`: 设置为 `true` 以启用本地配置更新（等同于 `-u` 参数）
 
 ### 删除实例
 
@@ -336,14 +340,7 @@ shfmt -i 2 -ci -sr -w install-*.sh
 
 ### 测试
 
-```bash
-# 完整安装测试（需要 sudo 权限）
-sudo bash install-release.sh
-sudo bash install-release.sh --check
-sudo bash install-dat-release.sh
-```
-
-**注意**：本项目没有单元测试，通过直接运行脚本进行测试。CI 通过 `.github/workflows/sh-checker.yml` 在 Ubuntu、Rocky Linux 和 Arch Linux 上自动运行测试。
+可以直接运行脚本进行测试。CI 通过 `.github/workflows/sh-checker.yml` 在 Ubuntu、Rocky Linux 和 Arch Linux 上自动运行测试。
 
 ## 贡献
 
