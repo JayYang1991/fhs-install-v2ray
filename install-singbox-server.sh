@@ -60,23 +60,24 @@ install_dependencies() {
   fi
 }
 
+curl() {
+  $(type -P curl) -L -q --retry 5 --retry-delay 10 --retry-max-time 60 "$@"
+}
+
 install_singbox() {
   echo "${aoi}info: 正在安装 sing-box...${reset}"
 
-  if [[ "$OS" == "ubuntu" ]] || [[ "$OS" == "debian" ]]; then
-    mkdir -p /etc/apt/keyrings
-    curl -fsSL https://sing-box.sagernet.org/apt/gpg.key \
-      | gpg --dearmor -o /etc/apt/keyrings/sagernet.gpg
-
-    echo "deb [signed-by=/etc/apt/keyrings/sagernet.gpg] https://sing-box.sagernet.org/apt stable main" \
-      > /etc/apt/sources.list.d/sagernet.list
-
-    apt update
-    apt install -y sing-box
-  elif [[ "$OS" == "arch" ]]; then
-    pacman -S --noconfirm --needed sing-box
+  if curl -fsSL https://sing-box.app/install.sh | sh; then
+    local installed_version
+    installed_version=$(sing-box version 2>/dev/null | head -n1 || echo "unknown")
+    echo "${green}info: sing-box 已安装: $installed_version${reset}"
   else
-    echo "${red}error: 当前操作系统暂不支持自动安装 sing-box${reset}"
+    echo "${red}error: 安装 sing-box 失败${reset}"
+    exit 1
+  fi
+
+  if ! command -v sing-box >/dev/null 2>&1; then
+    echo "${red}error: sing-box 命令未找到${reset}"
     exit 1
   fi
 }
@@ -86,23 +87,43 @@ generate_keys() {
 
   if [[ "$UUID" == "auto" ]]; then
     UUID=$(uuidgen)
+    if [[ -z "$UUID" ]]; then
+      echo "${red}error: 生成 UUID 失败${reset}"
+      exit 1
+    fi
   fi
 
-  KEY_OUTPUT=$(sing-box generate reality-keypair)
+  if ! KEY_OUTPUT=$(sing-box generate reality-keypair 2>&1); then
+    echo "${red}error: 生成 Reality 密钥失败${reset}"
+    exit 1
+  fi
+
   PRIVATE_KEY=$(echo "$KEY_OUTPUT" | awk '/PrivateKey/ {print $2}')
   PUBLIC_KEY=$(echo "$KEY_OUTPUT" | awk '/PublicKey/ {print $2}')
 
+  if [[ -z "$PRIVATE_KEY" ]] || [[ -z "$PUBLIC_KEY" ]]; then
+    echo "${red}error: 解析密钥失败${reset}"
+    exit 1
+  fi
+
   if [[ "$SHORT_ID" == "auto" ]]; then
     SHORT_ID=$(openssl rand -hex 4)
+    if [[ -z "$SHORT_ID" ]]; then
+      echo "${red}error: 生成 Short ID 失败${reset}"
+      exit 1
+    fi
   fi
 }
 
 write_config() {
   echo "${aoi}info: 正在写入配置文件...${reset}"
 
-  mkdir -p /etc/sing-box
+  mkdir -p /etc/sing-box || {
+    echo "${red}error: 创建配置目录失败${reset}"
+    exit 1
+  }
 
-  cat > /etc/sing-box/config.json <<EOF
+  if ! cat > /etc/sing-box/config.json <<EOF
 {
   "log": {
     "level": "$LOG_LEVEL",
@@ -142,6 +163,17 @@ write_config() {
   ]
 }
 EOF
+  then
+    echo "${red}error: 写入配置文件失败${reset}"
+    exit 1
+  fi
+
+  if ! sing-box check -c /etc/sing-box/config.json 2>/dev/null; then
+    echo "${red}error: 配置文件验证失败${reset}"
+    exit 1
+  fi
+
+  echo "${green}info: 配置文件验证通过${reset}"
 }
 
 configure_firewall() {
@@ -158,8 +190,28 @@ configure_firewall() {
 start_service() {
   echo "${aoi}info: 正在启动 sing-box 服务...${reset}"
 
-  systemctl enable sing-box
-  systemctl restart sing-box
+  if ! systemctl enable sing-box; then
+    echo "${red}error: 启用 sing-box 服务失败${reset}"
+    exit 1
+  fi
+
+  if ! systemctl restart sing-box; then
+    echo "${red}error: 启动 sing-box 服务失败${reset}"
+    systemctl status sing-box --no-pager
+    journalctl -u sing-box -n 20 --no-pager
+    exit 1
+  fi
+
+  sleep 2
+
+  if ! systemctl is-active --quiet sing-box; then
+    echo "${red}error: sing-box 服务未运行${reset}"
+    systemctl status sing-box --no-pager
+    journalctl -u sing-box -n 20 --no-pager
+    exit 1
+  fi
+
+  echo "${green}info: sing-box 服务已启动${reset}"
 }
 
 get_server_ip() {
