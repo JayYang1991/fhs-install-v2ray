@@ -49,11 +49,11 @@ install_dependencies() {
   echo "${aoi}info: 正在安装依赖...${reset}"
 
   if [[ "$OS" == "ubuntu" ]] || [[ "$OS" == "debian" ]]; then
-    "$PACKAGE_MANAGEMENT_INSTALL" curl gnupg ca-certificates uuid-runtime openssl
+    apt install -y curl gnupg ca-certificates uuid-runtime openssl
   elif [[ "$OS" == "centos" ]] || [[ "$OS" == "rhel" ]] || [[ "$OS" == "fedora" ]]; then
-    "$PACKAGE_MANAGEMENT_INSTALL" curl gnupg2 ca-certificates util-linux openssl
+    dnf install -y curl gnupg2 ca-certificates util-linux openssl
   elif [[ "$OS" == "arch" ]]; then
-    "$PACKAGE_MANAGEMENT_INSTALL" curl gnupg ca-certificates util-linux openssl
+    pacman -S --noconfirm --needed curl gnupg ca-certificates util-linux openssl
   else
     echo "${red}error: 不支持的操作系统: $OS${reset}"
     exit 1
@@ -71,9 +71,10 @@ install_singbox() {
     echo "deb [signed-by=/etc/apt/keyrings/sagernet.gpg] https://sing-box.sagernet.org/apt stable main" \
       > /etc/apt/sources.list.d/sagernet.list
 
-    "$PACKAGE_MANAGEMENT_INSTALL" sing-box
+    apt update
+    apt install -y sing-box
   elif [[ "$OS" == "arch" ]]; then
-    "$PACKAGE_MANAGEMENT_INSTALL" sing-box
+    pacman -S --noconfirm --needed sing-box
   else
     echo "${red}error: 当前操作系统暂不支持自动安装 sing-box${reset}"
     exit 1
@@ -276,13 +277,10 @@ main() {
   identify_the_operating_system_and_architecture
 
   if [[ "$OS" == "ubuntu" ]] || [[ "$OS" == "debian" ]]; then
-    PACKAGE_MANAGEMENT_INSTALL="apt install -y"
     apt update
   elif [[ "$OS" == "centos" ]] || [[ "$OS" == "rhel" ]] || [[ "$OS" == "fedora" ]]; then
-    PACKAGE_MANAGEMENT_INSTALL="dnf install -y"
     dnf check-update || true
   elif [[ "$OS" == "arch" ]]; then
-    PACKAGE_MANAGEMENT_INSTALL="pacman -S --noconfirm --needed"
     pacman -Sy --noconfirm
   fi
 
