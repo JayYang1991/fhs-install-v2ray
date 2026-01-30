@@ -251,9 +251,10 @@ proxies:
     network: tcp
     tls: true
     udp: true
-    flow: ""
     servername: ${DOMAIN}
-    reality-opts:
+    skip-cert-verify: true
+    client-fingerprint: chrome
+    reality:
       public-key: ${PUBLIC_KEY}
       short-id: ${SHORT_ID}
 
