@@ -2,7 +2,7 @@
 # Refactored remove_vultr_instance.sh
 
 # --- Configuration (Externalized with Defaults) ---
-MY_LABEL="${VULTR_LABEL:-ubuntu_2204}"
+MY_LABEL="${VULTR_LABEL:-ubuntu_2404}"
 
 # --- Internal Variables ---
 RED='\033[0;31m'

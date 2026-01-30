@@ -2,14 +2,14 @@
 # Refactored create_vultr_instance.sh
 
 # --- Configuration (Externalized with Defaults) ---
-MY_REGION="${VULTR_REGION:-ewr}"
-MY_PLAN="${VULTR_PLAN:-vc2-1c-0.5gb-v6}"
-MY_OS="${VULTR_OS:-2625}" # Ubuntu 22.04
+MY_REGION="${VULTR_REGION:-nrt}"
+MY_PLAN="${VULTR_PLAN:-vc2-1c-1gb}"
+MY_OS="${VULTR_OS:-2284}" # Ubuntu 24.04
 MY_HOST="${VULTR_HOST:-jayyang}"
-MY_LABEL="${VULTR_LABEL:-ubuntu_2204}"
+MY_LABEL="${VULTR_LABEL:-ubuntu_2404}"
 MY_TAG="${VULTR_TAG:-v2ray}"
 MY_SSH_KEYS="${VULTR_SSH_KEYS:-c5e8bf26-ab13-454a-a827-c2afff006a67,fa784b8e-c8d9-40d3-ab66-c7b0177a4013}"
-SCRIPT_ID="${VULTR_SCRIPT_ID:-b587aa57-c65c-4dbd-a7f9-903be3d7b0e7}"
+SCRIPT_ID="${VULTR_SCRIPT_ID:-89005eb6-6e67-40fb-b873-c8399295f05e}"
 REPO_BRANCH="${V2RAY_REPO_BRANCH:-master}"
 ENABLE_LOCAL_CONFIG="${ENABLE_LOCAL_CONFIG:-false}"
 
@@ -30,6 +30,13 @@ show_help() {
     echo "Environment Variables:"
     echo "  VULTR_REGION, VULTR_PLAN, VULTR_OS, VULTR_SSH_KEYS, VULTR_SCRIPT_ID"
     echo "  ENABLE_LOCAL_CONFIG=true (Alternative way to enable local update)"
+    echo ""
+    echo "sing-box Configuration:"
+    echo "  SINGBOX_PORT (default: 443)"
+    echo "  SINGBOX_DOMAIN (default: www.cloudflare.com)"
+    echo "  SINGBOX_UUID (default: auto)"
+    echo "  SINGBOX_SHORT_ID (default: auto)"
+    echo "  SINGBOX_LOG_LEVEL (default: info)"
 }
 
 log() {
@@ -121,6 +128,27 @@ eof
     fi
 }
 
+install_singbox() {
+    local port="${SINGBOX_PORT:-443}"
+    local domain="${SINGBOX_DOMAIN:-www.cloudflare.com}"
+    local uuid="${SINGBOX_UUID:-auto}"
+    local short_id="${SINGBOX_SHORT_ID:-auto}"
+    local log_level="${SINGBOX_LOG_LEVEL:-info}"
+
+    log "Installing sing-box on VPS ($VPS_IP)..."
+    log "Parameters: port=$port, domain=$domain, uuid=$uuid, short_id=$short_id"
+
+    ssh -T -o StrictHostKeyChecking=no "root@${VPS_IP}" << eof
+    bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/${REPO_BRANCH}/install-singbox-server.sh) --port ${port} --domain ${domain} --uuid ${uuid} --short-id ${short_id} --log-level ${log_level}
+eof
+    if [[ $? -eq 0 ]]; then
+        log "sing-box installation on $VPS_IP success."
+    else
+        warn "sing-box installation failed."
+        return 1
+    fi
+}
+
 set_env_var() {
     local var_name="$1"
     local var_value="$2"
@@ -206,6 +234,7 @@ main() {
     fi
 
     install_v2ray
+    install_singbox
     
     if [[ "$ENABLE_LOCAL_CONFIG" == "true" ]]; then
         update_local_v2ray_agent_config

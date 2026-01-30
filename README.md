@@ -49,6 +49,190 @@ installed: /etc/systemd/system/v2ray@.service
 
 * 该脚本在运行时会提供 `info` 和 `error` 等信息，请仔细阅读。
 
+### configure-proxy.sh - 代理配置脚本
+
+`configure-proxy.sh` 是一个用于配置终端代理环境的脚本，支持多种应用代理设置，包括 Shell、Code-server 和 Docker。
+
+#### 基本用法
+
+```bash
+# 使用默认设置配置所有代理 (socks5代理，127.0.0.1:7897)
+./configure-proxy.sh
+
+# 显示帮助信息
+./configure-proxy.sh -H
+./configure-proxy.sh --help
+```
+
+#### 自定义配置
+
+```bash
+# 配置HTTP代理
+./configure-proxy.sh -h 192.168.1.100 -p 8080 -t http
+
+# 配置带认证的代理
+./configure-proxy.sh -h proxy.example.com -p 3128 -u username -w password
+
+# 自定义不代理列表
+./configure-proxy.sh -n localhost,127.0.0.1,::1,docker-registry
+```
+
+#### 选择性配置
+
+```bash
+# 仅配置 Shell 代理
+./configure-proxy.sh -s
+./configure-proxy.sh --shell-only
+
+# 仅配置 Code-server 代理
+./configure-proxy.sh -c
+./configure-proxy.sh --code-only
+
+# 仅配置 Docker 代理
+./configure-proxy.sh -d
+./configure-proxy.sh --docker-only
+```
+
+#### 管理配置
+
+```bash
+# 显示当前代理配置
+./configure-proxy.sh --show
+
+# 移除所有代理配置
+./configure-proxy.sh -r
+./configure-proxy.sh --remove
+```
+
+#### 环境变量
+
+可以在运行脚本前设置以下环境变量：
+
+```bash
+export PROXY_HOST='127.0.0.1'        # 代理主机 (默认: 127.0.0.1)
+export PROXY_PORT='7897'            # 代理端口 (默认: 7897)
+export PROXY_TYPE='socks5'          # 代理类型: http 或 socks5 (默认: socks5)
+export PROXY_USER='username'        # 代理用户名 (可选)
+export PROXY_PASS='password'        # 代理密码 (可选)
+export NO_PROXY='localhost,127.0.0.1,::1'  # 不代理列表 (可选)
+```
+
+#### 参数说明
+
+| 参数 | 简写 | 描述 | 默认值 |
+|------|------|------|--------|
+| `--host` | `-h` | 代理主机地址 | 127.0.0.1 |
+| `--port` | `-p` | 代理端口 | 7897 |
+| `--type` | `-t` | 代理类型 (http/socks5) | socks5 |
+| `--user` | `-u` | 代理用户名 | (空) |
+| `--pass` | `-w` | 代理密码 | (空) |
+| `--no-proxy` | `-n` | 不代理列表 | localhost,127.0.0.1,::1 |
+| `--remove` | `-r` | 移除所有配置 | - |
+| `--shell-only` | `-s` | 仅配置 Shell | - |
+| `--code-only` | `-c` | 仅配置 Code-server | - |
+| `--docker-only` | `-d` | 仅配置 Docker | - |
+| `--show` | - | 显示当前配置 | - |
+| `--help` | `-H` | 显示帮助信息 | - |
+
+#### 配置详情
+
+##### Shell 代理配置
+
+脚本会在 `~/.bashrc` 和 `~/.zshrc` 中添加以下环境变量：
+
+```bash
+export http_proxy="http://127.0.0.1:7897"
+export https_proxy="http://127.0.0.1:7897" 
+export all_proxy="http://127.0.0.1:7897"
+export no_proxy="localhost,127.0.0.1,::1"
+export HTTP_PROXY="http://127.0.0.1:7897"
+export HTTPS_PROXY="http://127.0.0.1:7897"
+export ALL_PROXY="http://127.0.0.1:7897" 
+export NO_PROXY="localhost,127.0.0.1,::1"
+```
+
+##### Code-server 配置
+
+在 `~/.config/code-server/config.yaml` 中添加：
+
+```yaml
+proxy: "http://127.0.0.1:7897"
+```
+
+##### Docker 配置
+
+在 `/etc/systemd/system/docker.service.d/http-proxy.conf` 中添加：
+
+```ini
+[Service]
+Environment="HTTP_PROXY=http://127.0.0.1:7897"
+Environment="HTTPS_PROXY=http://127.0.0.1:7897"
+Environment="NO_PROXY=localhost,127.0.0.1,::1"
+Environment="http_proxy=http://127.0.0.1:7897"
+Environment="https_proxy=http://127.0.0.1:7897" 
+Environment="no_proxy=localhost,127.0.0.1,::1"
+```
+
+#### 注意事项
+
+1. **权限要求**：Docker 配置需要 root 权限
+2. **Code-server 重启**：配置 Code-server 后需要重启服务才能生效
+3. **Shell 配置**：Shell 配置需要重新加载配置文件或新开终端才能生效
+4. **验证配置**：使用 `./configure-proxy.sh --show` 查看当前配置状态
+5. **清理配置**：使用 `./configure-proxy.sh --remove` 移除所有配置
+
+#### 故障排除
+
+##### 常见问题
+
+1. **权限不足**：Docker 配置需要 root 权限，脚本会提示并询问是否继续
+2. **配置不生效**：需要重新加载 shell 配置或重启相关服务
+3. **代理连接失败**：检查代理服务器是否正常运行，端口是否正确
+
+##### 调试模式
+
+设置 `DEBUG=1` 环境变量可启用调试输出：
+
+```bash
+export DEBUG=1
+./configure-proxy.sh
+```
+
+#### 示例
+
+##### 完整配置示例
+
+```bash
+# 设置环境变量
+export PROXY_HOST='proxy.example.com'
+export PROXY_PORT='3128'
+export PROXY_TYPE='http'
+export PROXY_USER='myuser'
+export PROXY_PASS='mypassword'
+export NO_PROXY='localhost,127.0.0.1,::1,192.168.1.0/24'
+
+# 执行配置
+sudo ./configure-proxy.sh
+```
+
+##### 仅配置 Docker 代理
+
+```bash
+sudo ./configure-proxy.sh -d
+```
+
+##### 查看当前配置
+
+```bash
+./configure-proxy.sh --show
+```
+
+##### 移除所有配置
+
+```bash
+sudo ./configure-proxy.sh --remove
+```
+
 ### 统一安装脚本
 
 本项目已将所有安装脚本合并为一个统一脚本 `install-v2ray.sh`，通过 `--mode` 参数选择不同的安装模式。
