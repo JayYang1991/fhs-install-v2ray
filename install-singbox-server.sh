@@ -231,7 +231,7 @@ get_server_ip() {
   echo "$server_ip"
 }
 
-generate_clash_verge_subscription() {
+generate_clash_verge_config() {
   local server_ip
   server_ip=$(get_server_ip)
 
@@ -240,8 +240,7 @@ generate_clash_verge_subscription() {
     return 1
   fi
 
-  local clash_config
-  clash_config=$(cat <<EOF
+  cat <<EOF
 proxies:
   - name: "sing-box-${server_ip}"
     type: vless
@@ -268,7 +267,15 @@ proxy-groups:
 rules:
   - MATCH,PROXY
 EOF
-)
+}
+
+generate_clash_verge_subscription_url() {
+  local clash_config
+  clash_config=$(generate_clash_verge_config)
+
+  if [[ -z "$clash_config" ]]; then
+    return 1
+  fi
 
   local subscription_url
   subscription_url=$(echo -n "$clash_config" | base64 -w 0)
@@ -277,13 +284,16 @@ EOF
 }
 
 print_info() {
+  local server_ip
+  server_ip=$(get_server_ip)
+
   echo ""
   echo "========================================"
   echo "${green}✅ sing-box Server 安装完成${reset}"
   echo ""
   echo "📌 客户端参数："
   echo "协议: VLESS"
-  echo "地址: $(get_server_ip)"
+  echo "地址: $server_ip"
   echo "端口: $PORT"
   echo "UUID: $UUID"
   echo "Reality 公钥: $PUBLIC_KEY"
@@ -291,12 +301,25 @@ print_info() {
   echo "short_id: $SHORT_ID"
   echo "传输: TCP"
   echo ""
-  echo "📌 Clash Verge 订阅链接："
-  local subscription_url
-  subscription_url=$(generate_clash_verge_subscription)
-  if [[ -n "$subscription_url" ]]; then
-    echo "base64://${subscription_url}"
+  echo "📌 Clash Verge 导入方式："
+  echo ""
+  echo "方式1 - 手动添加节点："
+  echo "  点击「添加节点」→ 选择「VLESS」"
+  echo "  填写上述参数"
+  echo ""
+  echo "方式2 - 导入配置文件："
+  local config_file="/tmp/sing-box-clash-config.yaml"
+  generate_clash_verge_config > "$config_file" 2>/dev/null || true
+  if [[ -f "$config_file" ]]; then
+    echo "  配置文件路径: $config_file"
+    echo "  复制此路径或文件内容到 Clash Verge"
   fi
+  echo ""
+  echo "方式3 - 复制配置内容："
+  echo "--- 配置开始 ---"
+  generate_clash_verge_config
+  echo "--- 配置结束 ---"
+  echo ""
   echo "========================================"
 }
 
