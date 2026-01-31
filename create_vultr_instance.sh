@@ -12,6 +12,8 @@ MY_SSH_KEYS="${VULTR_SSH_KEYS:-c5e8bf26-ab13-454a-a827-c2afff006a67,fa784b8e-c8d
 SCRIPT_ID="${VULTR_SCRIPT_ID:-89005eb6-6e67-40fb-b873-c8399295f05e}"
 REPO_BRANCH="${V2RAY_REPO_BRANCH:-master}"
 ENABLE_LOCAL_CONFIG="${ENABLE_LOCAL_CONFIG:-false}"
+ENABLE_CLASH_CONFIG="${ENABLE_CLASH_CONFIG:-false}"
+CLASH_CONFIG_PATH="${CLASH_CONFIG_PATH:-$HOME/.local/share/io.github.clash-verge-rev.clash-verge-rev/vultr-private.yaml}"
 
 # --- Internal Variables ---
 VPS_IP=""
@@ -25,11 +27,12 @@ show_help() {
     echo ""
     echo "Options:"
     echo "  -u, --update-local    Enable local V2Ray configuration update (default: disabled)"
+    echo "  -c, --update-clash    Enable local Clash configuration update (default: disabled)"
     echo "  -h, --help            Show this help message"
     echo ""
     echo "Environment Variables:"
     echo "  VULTR_REGION, VULTR_PLAN, VULTR_OS, VULTR_SSH_KEYS, VULTR_SCRIPT_ID"
-    echo "  ENABLE_LOCAL_CONFIG=true (Alternative way to enable local update)"
+    echo "  ENABLE_LOCAL_CONFIG=true, ENABLE_CLASH_CONFIG=true"
     echo ""
     echo "sing-box Configuration:"
     echo "  SINGBOX_PORT (default: 443)"
@@ -104,11 +107,21 @@ check_ssh_until_success() {
     local max_attempts="${4:-60}"
     local interval="${5:-5}"
     
-    log "Waiting for SSH to become available on $host:$port..."
+    log "Waiting for SSH to become available on $host:$port (verifying root login)..."
     for ((attempt=1; attempt<=max_attempts; attempt++)); do
-        if ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout="$timeout" -l root -p "$port" "$host" "echo 'ready'" >/dev/null 2>&1; then
-            log "SSH connection successful."
-            return 0
+        local output
+        # Use whoami to ensure we are actually logged in as root
+        if output=$(ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout="$timeout" -l root -p "$port" "$host" "whoami" 2>/dev/null); then
+            if [[ "$output" == "root" ]]; then
+                log "First SSH connection successful as root."
+                # Wait 2 seconds and check again to ensure stability
+                sleep 2
+                if ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout="$timeout" -l root -p "$port" "$host" "true" 2>/dev/null; then
+                    log "SSH connection verified and stable."
+                    return 0
+                fi
+                log "SSH connection was unstable, retrying..."
+            fi
         fi
         [[ $attempt -lt $max_attempts ]] && sleep "$interval"
     done
@@ -138,11 +151,31 @@ install_singbox() {
     log "Installing sing-box on VPS ($VPS_IP)..."
     log "Parameters: port=$port, domain=$domain, uuid=$uuid, short_id=$short_id"
 
-    ssh -T -o StrictHostKeyChecking=no "root@${VPS_IP}" << eof
+    local output
+    output=$(ssh -T -o StrictHostKeyChecking=no "root@${VPS_IP}" << eof
     bash <(curl -L -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/${REPO_BRANCH}/install-singbox-server.sh) --port ${port} --domain ${domain} --uuid ${uuid} --short-id ${short_id} --log-level ${log_level}
 eof
-    if [[ $? -eq 0 ]]; then
+)
+    local ret_val=$?
+    echo "$output"
+
+    if [[ $ret_val -eq 0 ]]; then
         log "sing-box installation on $VPS_IP success."
+        # Capture parameters from output
+        SINGBOX_PUBLIC_KEY=$(echo "$output" | grep "Reality 公钥:" | awk '{print $3}' | tr -d '\r')
+        SINGBOX_ACTUAL_UUID=$(echo "$output" | grep "UUID:" | awk '{print $2}' | tr -d '\r')
+        
+        if [[ -z "$SINGBOX_PUBLIC_KEY" ]]; then
+            warn "Could not capture Reality Public Key from remote output."
+        else
+            log "Captured Reality Public Key: $SINGBOX_PUBLIC_KEY"
+        fi
+
+        if [[ -z "$SINGBOX_ACTUAL_UUID" ]]; then
+            warn "Could not capture UUID from remote output."
+        else
+            log "Captured Actual UUID: $SINGBOX_ACTUAL_UUID"
+        fi
     else
         warn "sing-box installation failed."
         return 1
@@ -199,12 +232,128 @@ update_local_v2ray_agent_config() {
     rm -f "$tmp_file"
 }
 
+update_clash_config() {
+    if [[ ! -f "$CLASH_CONFIG_PATH" ]]; then
+        warn "Clash config file not found: $CLASH_CONFIG_PATH"
+        return 1
+    fi
+
+    if [[ -z "$SINGBOX_PUBLIC_KEY" ]]; then
+        warn "Cannot update Clash config: Missing Reality Public Key."
+        return 1
+    fi
+
+    log "Updating local Clash config: $CLASH_CONFIG_PATH"
+
+python3 - <<EOF
+import yaml
+import sys
+import os
+
+config_path = "$CLASH_CONFIG_PATH"
+server_ip = "$VPS_IP"
+port = int("${SINGBOX_PORT:-443}")
+uuid = "$SINGBOX_ACTUAL_UUID"
+domain = "${SINGBOX_DOMAIN:-www.cloudflare.com}"
+public_key = "$SINGBOX_PUBLIC_KEY"
+short_id = "$SINGBOX_SHORT_ID"
+
+try:
+    with open(config_path, 'r', encoding='utf-8') as f:
+        config = yaml.safe_load(f)
+
+    if not config:
+        config = {}
+
+    # Update or add proxy
+    proxies = config.get('proxies', [])
+    proxy_name = f"sing-box-{server_ip}"
+    
+    # Generate UUID if auto
+    actual_uuid = uuid
+    if actual_uuid == "auto" or not actual_uuid:
+        # In this script, if it was auto, the remote generated it. 
+        # But wait, create_vultr_instance.sh doesn't know the remote UUID unless we capture it too.
+        pass
+
+    new_proxy = {
+        'name': proxy_name,
+        'type': 'vless',
+        'server': server_ip,
+        'port': port,
+        'uuid': actual_uuid,
+        'network': 'tcp',
+        'tls': True,
+        'udp': True,
+        'flow': 'xtls-rprx-vision',
+        'servername': domain,
+        'reality-opts': {
+            'public-key': public_key,
+            'short-id': short_id
+        },
+        'client-fingerprint': 'chrome'
+    }
+
+    # Find if proxy already exists by name
+    found = False
+    for i, p in enumerate(proxies):
+        if p.get('name') == proxy_name:
+            proxies[i] = new_proxy
+            found = True
+            break
+    
+    if not found:
+        proxies.append(new_proxy)
+    
+    config['proxies'] = proxies
+
+    # Ensure proxy is in PROXY group
+    proxy_groups = config.get('proxy-groups', [])
+    found_group = False
+    for group in proxy_groups:
+        if group.get('name') == 'PROXY':
+            group_proxies = group.get('proxies', [])
+            if proxy_name not in group_proxies:
+                group_proxies.insert(0, proxy_name)
+                group['proxies'] = group_proxies
+            found_group = True
+            break
+    
+    if not found_group:
+        proxy_groups.append({
+            'name': 'PROXY',
+            'type': 'select',
+            'proxies': [proxy_name, 'DIRECT']
+        })
+    
+    config['proxy-groups'] = proxy_groups
+
+    # Write back
+    with open(config_path, 'w', encoding='utf-8') as f:
+        yaml.dump(config, f, allow_unicode=True, sort_keys=False)
+    
+    print(f"info: Successfully updated node {proxy_name}")
+
+except Exception as e:
+    print(f"error: Failed to update config: {str(e)}")
+    sys.exit(1)
+EOF
+
+    if [[ $? -eq 0 ]]; then
+        log "Local Clash configuration updated successfully."
+    else
+        warn "Failed to update local Clash configuration."
+    fi
+}
+
 # --- Main Logic ---
 main() {
     # Parse Arguments
     while [[ "$#" -gt 0 ]]; do
         case $1 in
             -u|--update-local) ENABLE_LOCAL_CONFIG="true"; shift ;;
+            -c|--update-clash) ENABLE_CLASH_CONFIG="true"; shift ;;
+            --clash-config-path) CLASH_CONFIG_PATH="$2"; shift 2 ;;
             -h|--help) show_help; exit 0 ;;
             *) warn "Unknown parameter passed: $1"; show_help; exit 1 ;;
         esac
@@ -238,8 +387,10 @@ main() {
     
     if [[ "$ENABLE_LOCAL_CONFIG" == "true" ]]; then
         update_local_v2ray_agent_config
-    else
-        log "Skipping local configuration update (ENABLE_LOCAL_CONFIG is not true)."
+    fi
+
+    if [[ "$ENABLE_CLASH_CONFIG" == "true" ]]; then
+        update_clash_config
     fi
 }
 
