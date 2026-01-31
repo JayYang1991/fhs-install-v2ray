@@ -57,6 +57,8 @@ install_dependencies() {
   echo "${aoi}info: 正在安装依赖...${reset}"
 
   if [[ "$OS" == "ubuntu" ]] || [[ "$OS" == "debian" ]]; then
+    export DEBIAN_FRONTEND=noninteractive
+    dpkg --configure -a || true
     apt install -y curl gnupg ca-certificates uuid-runtime openssl
   elif [[ "$OS" == "centos" ]] || [[ "$OS" == "rhel" ]] || [[ "$OS" == "fedora" ]]; then
     dnf install -y curl gnupg2 ca-certificates util-linux openssl
