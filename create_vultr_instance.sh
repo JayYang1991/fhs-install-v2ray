@@ -361,6 +361,7 @@ EOF
         log "Syncing with $service_config..."
         if cp "$CLASH_CONFIG_PATH" "$service_config"; then
             log "Successfully synchronized with $service_config"
+            sudo systemctl restart verge-mihomo.service
         else
             warn "Failed to synchronize with $service_config"
         fi
