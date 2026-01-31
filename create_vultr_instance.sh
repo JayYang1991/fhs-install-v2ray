@@ -354,6 +354,16 @@ EOF
 
     if [[ $? -eq 0 ]]; then
         log "Local Clash configuration updated successfully."
+        # Sync with mihomo-service.yaml in the same directory
+        local config_dir
+        config_dir=$(dirname "$CLASH_CONFIG_PATH")
+        local service_config="$config_dir/mihomo-service.yaml"
+        log "Syncing with $service_config..."
+        if cp "$CLASH_CONFIG_PATH" "$service_config"; then
+            log "Successfully synchronized with $service_config"
+        else
+            warn "Failed to synchronize with $service_config"
+        fi
     else
         warn "Failed to update local Clash configuration."
     fi
