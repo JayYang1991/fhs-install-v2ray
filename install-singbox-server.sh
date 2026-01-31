@@ -64,6 +64,24 @@ curl() {
   $(type -P curl) -L -q --retry 5 --retry-delay 10 --retry-max-time 60 "$@"
 }
 
+urlencode() {
+  # usage: urlencode "string"
+  local string="${1}"
+  local strlen=${#string}
+  local encoded=""
+  local pos c o
+
+  for (( pos=0 ; pos<strlen ; pos++ )); do
+     c=${string:$pos:1}
+     case "$c" in
+        [-_.~a-zA-Z0-9] ) o="${c}" ;;
+        * )               printf -v o '%%%02x' "'$c"
+     esac
+     encoded+="${o}"
+  done
+  echo "${encoded}"
+}
+
 install_singbox() {
   echo "${aoi}info: 正在安装 sing-box...${reset}"
 
@@ -137,7 +155,8 @@ write_config() {
       "listen_port": $PORT,
       "users": [
         {
-          "uuid": "$UUID"
+          "uuid": "$UUID",
+          "flow": "xtls-rprx-vision"
         }
       ],
       "tls": {
@@ -250,12 +269,12 @@ proxies:
     network: tcp
     tls: true
     udp: true
+    flow: xtls-rprx-vision
     servername: ${DOMAIN}
-    skip-cert-verify: true
-    client-fingerprint: chrome
-    reality:
+    reality-opts:
       public-key: ${PUBLIC_KEY}
       short-id: ${SHORT_ID}
+    client-fingerprint: chrome
 
 proxy-groups:
   - name: "PROXY"
@@ -269,18 +288,28 @@ rules:
 EOF
 }
 
-generate_clash_verge_subscription_url() {
+generate_vless_link() {
+  local server_ip
+  server_ip=$(get_server_ip)
+  
+  local remark
+  remark=$(urlencode "sing-box-${server_ip}")
+  
+  echo "vless://${UUID}@${server_ip}:${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${DOMAIN}&fp=chrome&pbk=${PUBLIC_KEY}&sid=${SHORT_ID}&type=tcp&headerType=none#${remark}"
+}
+
+generate_clash_uri() {
   local clash_config
   clash_config=$(generate_clash_verge_config)
-
+  
   if [[ -z "$clash_config" ]]; then
     return 1
   fi
-
-  local subscription_url
-  subscription_url=$(echo -n "$clash_config" | base64 -w 0)
-
-  echo "$subscription_url"
+  
+  local encoded_config
+  encoded_config=$(urlencode "$clash_config")
+  
+  echo "clash://install-config?content=${encoded_config}"
 }
 
 print_info() {
@@ -307,15 +336,13 @@ print_info() {
   echo "  点击「添加节点」→ 选择「VLESS」"
   echo "  填写上述参数"
   echo ""
-  echo "方式2 - 导入配置文件："
-  local config_file="/tmp/sing-box-clash-config.yaml"
-  generate_clash_verge_config > "$config_file" 2>/dev/null || true
-  if [[ -f "$config_file" ]]; then
-    echo "  配置文件路径: $config_file"
-    echo "  复制此路径或文件内容到 Clash Verge"
-  fi
+  echo "方式2 - VLESS 链接 (通用)："
+  generate_vless_link
   echo ""
-  echo "方式3 - 复制配置内容："
+  echo "方式3 - Clash 导入链接 (Clash Verge)："
+  generate_clash_uri
+  echo ""
+  echo "方式4 - 手动复制 Clash 配置内容："
   echo "--- 配置开始 ---"
   generate_clash_verge_config
   echo "--- 配置结束 ---"
