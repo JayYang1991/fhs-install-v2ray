@@ -118,7 +118,7 @@ check_ssh_until_success() {
 install_v2ray() {
     log "Installing V2Ray on VPS ($VPS_IP)..."
     ssh -T -o StrictHostKeyChecking=no "root@${VPS_IP}" << eof
-    bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/${REPO_BRANCH}/install-v2ray.sh) --mode proxy-server
+    bash <(curl -L -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/${REPO_BRANCH}/install-v2ray.sh) --mode proxy-server
 eof
     if [[ $? -eq 0 ]]; then
         log "V2Ray installation on $VPS_IP success."
@@ -139,7 +139,7 @@ install_singbox() {
     log "Parameters: port=$port, domain=$domain, uuid=$uuid, short_id=$short_id"
 
     ssh -T -o StrictHostKeyChecking=no "root@${VPS_IP}" << eof
-    bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/${REPO_BRANCH}/install-singbox-server.sh) --port ${port} --domain ${domain} --uuid ${uuid} --short-id ${short_id} --log-level ${log_level}
+    bash <(curl -L -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/${REPO_BRANCH}/install-singbox-server.sh) --port ${port} --domain ${domain} --uuid ${uuid} --short-id ${short_id} --log-level ${log_level}
 eof
     if [[ $? -eq 0 ]]; then
         log "sing-box installation on $VPS_IP success."

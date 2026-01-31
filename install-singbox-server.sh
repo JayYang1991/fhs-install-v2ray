@@ -11,8 +11,6 @@
 #   SHORT_ID          - Reality short ID (default: auto-generated)
 #   LOG_LEVEL         - Log level (default: info)
 #
-set -e
-
 # ===================== Default Parameters =====================
 PORT=${PORT:-443}
 DOMAIN=${DOMAIN:-www.cloudflare.com}
@@ -21,7 +19,8 @@ SHORT_ID=${SHORT_ID:-auto}
 LOG_LEVEL=${LOG_LEVEL:-info}
 
 # ===================== Color Output =====================
-if [[ -t 1 ]] && command -v tput >/dev/null 2>&1; then
+# Initialize color variables safely before set -e
+if [[ -t 1 ]] && [[ -n "$TERM" ]] && [[ "$TERM" != "dumb" ]] && command -v tput >/dev/null 2>&1; then
   red=$(tput setaf 1 2>/dev/null || echo "")
   green=$(tput setaf 2 2>/dev/null || echo "")
   aoi=$(tput setaf 6 2>/dev/null || echo "")
@@ -32,6 +31,8 @@ else
   aoi=""
   reset=""
 fi
+
+set -e
 
 # ===================== Functions =====================
 
