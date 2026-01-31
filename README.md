@@ -344,29 +344,36 @@ export V2RAY_REVERSE_ID="your-reverse-id"
 # 查看帮助
 # ./create_vultr_instance.sh --help
 
-# 创建实例并安装 V2Ray（默认不更新本地配置）
+# 创建实例并安装 V2Ray/sing-box（默认不更新本地配置）
 # ./create_vultr_instance.sh
 
 # 创建实例并自动更新本地 V2Ray 客户端配置
 # ./create_vultr_instance.sh --update-local
+
+# 创建实例并自动更新本地 Clash 配置文件 (针对 Clash Verge Rev/Mihomo)
+# ./create_vultr_instance.sh --update-clash
 ```
 
 **脚本功能**：
 - 自动检测并安装依赖 (`vultr-cli`, `curl` 等)
-- 自动创建 Vultr 实例（默认配置：Ubuntu 22.04，1核 0.5GB）
+- 自动创建 Vultr 实例（默认配置：Ubuntu 24.04，1核 0.5GB）
 - 支持 IPv4 和 IPv6 地址自动提取
-- 等待实例启动并检测 SSH 连接
-- 自动在远程服务器安装 V2Ray 服务端
+- 等待实例启动并检测 SSH 连接（严格校验 root 登录及稳定性）
+- 自动在远程服务器安装 **V2Ray** 和 **sing-box** (含 Reality 配置)
+- **参数自动捕获**：自动从远程提取生成的 UUID、Reality 公钥和 Short ID
+- **本地 Clash 配置更新**：
+    - 自动将新节点添加到指定 YAML 配置文件
+    - **服务同步**：自动将更新后的配置同步到 `mihomo-service.yaml`
+    - **自动重启**：更新完成后自动重启本地 `verge-mihomo.service`
 - （可选）自动更新本地 V2Ray 客户端配置并重启服务
 
 **自定义配置**：
-可以通过设置环境变量或编辑脚本修改以下变量：
+可以通过设置环境变量或命令行参数修改以下变量：
 - `VULTR_REGION`: 数据中心区域（默认：ewr）
 - `VULTR_PLAN`: 实例规格（默认：vc2-1c-0.5gb-v6）
-- `VULTR_OS`: 操作系统 ID（默认：2625，Ubuntu 22.04）
-- `VULTR_SSH_KEYS`: SSH 密钥 ID
-- `VULTR_SCRIPT_ID`: 启动脚本 ID
-- `ENABLE_LOCAL_CONFIG`: 设置为 `true` 以启用本地配置更新（等同于 `-u` 参数）
+- `VULTR_OS`: 操作系统 ID（默认：2288，Ubuntu 24.04）
+- `ENABLE_CLASH_CONFIG`: 设置为 `true` 以启用 Clash 配置更新（等同于 `-c` 参数）
+- `CLASH_CONFIG_PATH`: 本地 Clash 配置文件路径
 
 ### 删除实例
 
