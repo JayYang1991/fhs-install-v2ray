@@ -164,6 +164,7 @@ eof
         # Capture parameters from output
         SINGBOX_PUBLIC_KEY=$(echo "$output" | grep "Reality 公钥:" | awk '{print $3}' | tr -d '\r')
         SINGBOX_ACTUAL_UUID=$(echo "$output" | grep "UUID:" | awk '{print $2}' | tr -d '\r')
+        SINGBOX_ACTUAL_SHORT_ID=$(echo "$output" | grep "short_id:" | awk '{print $2}' | tr -d '\r')
         
         if [[ -z "$SINGBOX_PUBLIC_KEY" ]]; then
             warn "Could not capture Reality Public Key from remote output."
@@ -175,6 +176,12 @@ eof
             warn "Could not capture UUID from remote output."
         else
             log "Captured Actual UUID: $SINGBOX_ACTUAL_UUID"
+        fi
+
+        if [[ -z "$SINGBOX_ACTUAL_SHORT_ID" ]]; then
+            warn "Could not capture Short ID from remote output."
+        else
+            log "Captured Actual Short ID: $SINGBOX_ACTUAL_SHORT_ID"
         fi
     else
         warn "sing-box installation failed."
@@ -256,7 +263,7 @@ port = int("${SINGBOX_PORT:-443}")
 uuid = "$SINGBOX_ACTUAL_UUID"
 domain = "${SINGBOX_DOMAIN:-www.cloudflare.com}"
 public_key = "$SINGBOX_PUBLIC_KEY"
-short_id = "$SINGBOX_SHORT_ID"
+short_id = "$SINGBOX_ACTUAL_SHORT_ID"
 
 try:
     with open(config_path, 'r', encoding='utf-8') as f:
