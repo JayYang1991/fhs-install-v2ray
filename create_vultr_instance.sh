@@ -131,6 +131,9 @@ check_ssh_until_success() {
 install_v2ray() {
     log "Installing V2Ray on VPS ($VPS_IP)..."
     ssh -T -o StrictHostKeyChecking=no "root@${VPS_IP}" << eof
+    export DEBIAN_FRONTEND=noninteractive
+    dpkg --configure -a || true
+    apt update || true
     bash <(curl -L -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/${REPO_BRANCH}/install-v2ray.sh) --mode proxy-server
 eof
     if [[ $? -eq 0 ]]; then
@@ -153,6 +156,9 @@ install_singbox() {
 
     local output
     output=$(ssh -T -o StrictHostKeyChecking=no "root@${VPS_IP}" << eof
+    export DEBIAN_FRONTEND=noninteractive
+    dpkg --configure -a || true
+    apt update || true
     bash <(curl -L -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/${REPO_BRANCH}/install-singbox-server.sh) --port ${port} --domain ${domain} --uuid ${uuid} --short-id ${short_id} --log-level ${log_level}
 eof
 )
