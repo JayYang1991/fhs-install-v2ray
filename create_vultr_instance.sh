@@ -76,8 +76,8 @@ get_vps_ip() {
     
     local vps_id=$(vultr-cli instance list | grep "$MY_LABEL" | awk '{print $1}')
 
-    # If IPv4 is missing, 0.0.0.0, or a private IP, try getting IPv6
-    if [[ -z "$VPS_IP" || "$VPS_IP" == "0.0.0.0" ]] || is_private_ip "$VPS_IP"; then
+    # Only if IPv4 is present and it is a private IP, try getting IPv6
+    if [[ -n "$VPS_IP" && "$VPS_IP" != "0.0.0.0" ]] && is_private_ip "$VPS_IP"; then
         log "IPv4 ($VPS_IP) is invalid or private. Attempting to fetch IPv6..."
         if [[ -n "$vps_id" ]]; then
             # Try specific IPv6 list first
