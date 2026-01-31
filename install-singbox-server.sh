@@ -21,10 +21,17 @@ SHORT_ID=${SHORT_ID:-auto}
 LOG_LEVEL=${LOG_LEVEL:-info}
 
 # ===================== Color Output =====================
-red=$(tput setaf 1)
-green=$(tput setaf 2)
-aoi=$(tput setaf 6)
-reset=$(tput sgr0)
+if [[ -t 1 ]] && command -v tput >/dev/null 2>&1; then
+  red=$(tput setaf 1 2>/dev/null || echo "")
+  green=$(tput setaf 2 2>/dev/null || echo "")
+  aoi=$(tput setaf 6 2>/dev/null || echo "")
+  reset=$(tput sgr0 2>/dev/null || echo "")
+else
+  red=""
+  green=""
+  aoi=""
+  reset=""
+fi
 
 # ===================== Functions =====================
 
