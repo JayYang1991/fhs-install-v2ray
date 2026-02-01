@@ -285,8 +285,14 @@ bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/m
 
 #### 安装 V2Ray 代理服务端
 
+**环境变量设置**（必须）：
+- `V2RAY_PROXY_ID`: VMess 用户 ID
+
 ```bash
-// 安装代理服务端
+# 设置环境变量
+export V2RAY_PROXY_ID="your-vmess-id"
+
+# 安装代理服务端
 # bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) --mode proxy-server
 ```
 
