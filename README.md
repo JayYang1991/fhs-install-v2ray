@@ -370,7 +370,7 @@ export V2RAY_REVERSE_ID="your-reverse-id"
 
 #### 安装 V2Ray 桥接服务端
 
-同时实现代理服务和内网穿透功能。
+同时实现代理服务和内网穿透功能。采用全新的全功能服务器配置模板。
 
 **环境变量设置**（必须）：
 - `V2RAY_PROXY_ID`: VMess 用户 ID
@@ -386,6 +386,7 @@ export V2RAY_REVERSE_ID="your-reverse-id"
 ```
 
 **特性**：
+- 使用 `server_config.json` 全功能模板
 - 合并了 `proxy-server` 和 `reverse-server` 的所有功能
 - 代理服务使用 KCP 传输方式（端口 31523）
 - 反向代理支持多域名穿透
@@ -520,9 +521,7 @@ export V2RAY_REVERSE_ID="your-reverse-id"
 | `proxy_server_config.json` | 代理服务端配置 |
 | `proxy_client_config.json` | 代理客户端配置 |
 | `reverse_server_config.json` | 反向代理服务端配置 |
-| `reverse_client_config.json` | 反向代理客户端配置 |
-| `bridge_server_config.json` | 桥接服务端配置 (代理 + 反代) |
-| `server_config.json` | 通用服务器配置 |
+| `server_config.json` | 全功能服务器配置 (默认/桥接) |
 
 **使用方法**：
 1. 下载对应的配置文件模板

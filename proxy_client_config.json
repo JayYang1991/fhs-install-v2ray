@@ -12,16 +12,6 @@
       }
     ]
   },
-  "observatory": {
-    "subjectSelector": [
-      "proxy", "direct"
-    ],
-    "probe": {
-      "timeout": "1s",
-      "interval": "30s",
-      "url": "https://www.google.com"
-    }
-  },
   "inbounds": [
     {
       "sniffing": {
@@ -34,7 +24,7 @@
       "listen": "127.0.0.1",
       "protocol": "socks",
       "settings": {
-        "udp": false,
+        "udp": true,
         "auth": "noauth"
       },
       "port": "1080"
@@ -57,20 +47,12 @@
   ],
   "outbounds": [
     {
-      "tag": "direct",
-      "protocol": "freedom",
-      "settings": {
-        "domainStrategy": "AsIs",
-        "userLevel": 0
-      }
-    },
-    {
       "tag": "proxy",
+      "protocol": "vmess",
       "mux": {
         "enabled": false,
         "concurrency": 8
       },
-      "protocol": "vmess",
       "streamSettings": {
         "network": "kcp",
         "kcpSettings": {
@@ -93,7 +75,7 @@
       "settings": {
         "vnext": [
           {
-            "address": "{V2RAY_PROXY_SERVER_IP}",  
+            "address": "{V2RAY_PROXY_SERVER_IP}",
             "users": [
               {
                 "id": "{V2RAY_PROXY_ID}",
@@ -105,6 +87,13 @@
             "port": 31523
           }
         ]
+      }
+    },
+    {
+      "tag": "direct",
+      "protocol": "freedom",
+      "settings": {
+        "domainStrategy": "UseIP"
       }
     },
     {
@@ -140,89 +129,48 @@
       }
     }
   ],
-  "dns": {},
   "routing": {
-    "balancers": [
+    "domainStrategy": "IPOnDemand",
+    "rules": [
       {
-        "tag": "failover",
-        "selector": ["proxy", "direct"],
-        "strategy": {
-          "type": "leastping"
-        },
-        "fallbackTag": "direct"
+        "type": "field",
+        "outboundTag": "direct",
+        "domain": [
+          "geosite:cn",
+          "geosite:private",
+          "localhost"
+        ]
+      },
+      {
+        "type": "field",
+        "outboundTag": "direct",
+        "ip": [
+          "geoip:cn",
+          "geoip:private"
+        ]
+      },
+      {
+        "type": "field",
+        "inboundTag": [
+          "ssl_bridge"
+        ],
+        "outboundTag": "tunnel",
+        "domain": [
+          "full:private.desktop.jason.com"
+        ]
+      },
+      {
+        "type": "field",
+        "inboundTag": [
+          "ssl_bridge"
+        ],
+        "outboundTag": "backend"
+      },
+      {
+        "type": "field",
+        "outboundTag": "proxy",
+        "network": "tcp,udp"
       }
-    ],
-    "settings": {
-      "domainStrategy": "AsIs",
-      "rules": [
-        {
-          "type": "field",
-          "outboundTag": "direct",
-          "domain": [
-            "localhost",
-            "geosite:cn",
-            "geosite:speedtest",
-            "myqnapcloud.com",
-            "qnap.com",
-            "ip.sb",
-            "vultr.com"
-          ]
-        },
-        {
-          "type": "field",
-          "balancerTag": "failover",
-          "domain": [
-            "geosite:geolocation-!cn",
-            "openai.com",
-            "docker.io",
-            "docker.com"
-          ]
-        },
-        {
-          "type": "field",
-          "balancerTag": "failover",
-          "ip": [                
-            "geoip:us",     
-            "geoip:ca",          
-            "geoip:mx",
-            "geoip:de",          
-            "geoip:fr",       
-            "geoip:gb",
-            "geoip:it",          
-            "geoip:jp",          
-            "geoip:kr",
-            "geoip:in",          
-            "geoip:br",          
-            "geoip:ar",          
-            "geoip:co",          
-            "geoip:au",          
-            "geoip:nz"            
-          ]
-        },
-        {
-          "type": "field",
-          "inboundTag": [
-            "ssl_bridge"
-          ],
-          "outboundTag": "tunnel",
-          "domain": [
-            "full:private.desktop.jason.com"
-          ]
-        },
-        {
-          "type": "field",
-          "inboundTag": [
-            "ssl_bridge"
-          ],
-          "outboundTag": "backend"
-        },
-        {
-          "type": "field",
-          "outboundTag": "direct",
-          "network": "tcp,udp"
-        }
-      ]
-    }
-  },
-  "transport": {}
+    ]
+  }
 }

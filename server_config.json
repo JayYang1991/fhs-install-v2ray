@@ -2,7 +2,7 @@
     "log": {
         "access": "/var/log/v2ray/access.log",
         "error": "/var/log/v2ray/error.log",
-        "loglevel": "error"
+        "loglevel": "warning"
     },
     "stats": {},
     "api": {
@@ -28,35 +28,16 @@
     "reverse": {
         "portals": [
             {
-                "tag": "ssl_portal",
-                "domain": "private.myssl.jason.com"
+                "tag": "ssl_portal_desktop",
+                "domain": "private.desktop.jason.com"
+            },
+            {
+                "tag": "ssl_portal_nas",
+                "domain": "private.nas.jason.com"
             }
         ]
     },
     "inbounds": [
-        {
-            "tag": "extern_ssl",
-            "port": 443,
-            "protocol": "dokodemo-door",
-            "settings": {
-                "address": "192.168.50.218",
-                "port": 2023,
-                "network": "tcp,udp"
-            }
-        },
-        {
-            "tag": "tunnel",
-            "port": 6688,
-            "protocol": "vmess",
-            "settings": {
-                "clients": [
-                    {
-                        "id": "c9915fcd-2dff-f1fc-28ea-5542507f24db",
-                        "alterId": 64
-                    }
-                ]
-            }
-        },
         {
             "tag": "proxy",
             "port": 31523,
@@ -65,7 +46,7 @@
                 "clients": [
                     {
                         "email": "jayyang1024@gmail.com",
-                        "id": "a1d10bc0-e3b0-4da5-8413-c25d9a06bc4b",
+                        "id": "{V2RAY_PROXY_ID}",
                         "level": 0,
                         "alterId": 4,
                         "security": "auto"
@@ -85,6 +66,37 @@
                 "destOverride": [
                     "http",
                     "tls"
+                ]
+            }
+        },
+        {
+            "tag": "extern_ssl",
+            "port": 443,
+            "protocol": "dokodemo-door",
+            "settings": {
+                "address": "127.0.0.1",
+                "port": 443,
+                "network": "tcp,udp"
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls"
+                ],
+                "routeOnly": true
+            }
+        },
+        {
+            "tag": "tunnel",
+            "port": 6688,
+            "protocol": "vmess",
+            "settings": {
+                "clients": [
+                    {
+                        "id": "{V2RAY_REVERSE_ID}",
+                        "alterId": 0
+                    }
                 ]
             }
         },
@@ -116,23 +128,6 @@
     "routing": {
         "domainStrategy": "IPOnDemand",
         "rules": [
-            {
-                "type": "field",
-                "inboundTag": [
-                    "extern_ssl"
-                ],
-                "outboundTag": "ssl_portal"
-            },
-            {
-                "type": "field",
-                "inboundTag": [
-                    "tunnel"
-                ],
-                "domain": [
-                    "full:private.myssl.jason.com"
-                ],
-                "outboundTag": "ssl_portal"
-            },
             {
                 "type": "field",
                 "domain": [
@@ -171,10 +166,60 @@
                 "outboundTag": "blocked"
             },
             {
+                "type": "field",
+                "inboundTag": [
+                    "extern_ssl"
+                ],
+                "domain": [
+                    "qnap.jayyang.cn",
+                    "proxymgr.jayyang.cn",
+                    "www.jayyang.cn",
+                    "ubuntu.jayyang.cn"
+                ],
+                "outboundTag": "ssl_portal_nas"
+            },
+            {
+                "type": "field",
+                "inboundTag": [
+                    "tunnel"
+                ],
+                "domain": [
+                    "full:private.nas.jason.com"
+                ],
+                "outboundTag": "ssl_portal_nas"
+            },
+            {
+                "type": "field",
+                "inboundTag": [
+                    "extern_ssl"
+                ],
+                "domain": [
+                    "jayyang.cn"
+                ],
+                "outboundTag": "ssl_portal_desktop"
+            },
+            {
+                "type": "field",
+                "inboundTag": [
+                    "tunnel"
+                ],
+                "domain": [
+                    "full:private.desktop.jason.com"
+                ],
+                "outboundTag": "ssl_portal_desktop"
+            },
+            {
                 "inboundTag": [
                     "api"
                 ],
                 "outboundTag": "api",
+                "type": "field"
+            },
+            {
+                "inboundTag": [
+                    "extern_ssl"
+                ],
+                "outboundTag": "blocked",
                 "type": "field"
             }
         ]

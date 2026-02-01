@@ -304,7 +304,7 @@ download_v2ray() {
   
   case "$INSTALL_MODE" in
     'bridge-server')
-      DOWNLOAD_CONF_LINK="https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/bridge_server_config.json"
+      DOWNLOAD_CONF_LINK="https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/server_config.json"
       ;;
     'proxy-server')
       DOWNLOAD_CONF_LINK="https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/proxy_server_config.json"
