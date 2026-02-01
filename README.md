@@ -241,7 +241,7 @@ sudo ./configure-proxy.sh --remove
 
 ```bash
 # 一键安装（使用默认参数）
-sudo ./install-singbox-server.sh
+bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-singbox-server.sh)
 ```
 
 #### 参数说明
@@ -260,7 +260,7 @@ sudo ./install-singbox-server.sh
 
 ```bash
 # 自定义端口和域名
-sudo ./install-singbox-server.sh --port 8443 --domain google.com
+bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-singbox-server.sh) --port 8443 --domain google.com
 ```
 
 #### 特性
