@@ -303,6 +303,9 @@ download_v2ray() {
   fi
   
   case "$INSTALL_MODE" in
+    'bridge-server')
+      DOWNLOAD_CONF_LINK="https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/bridge_server_config.json"
+      ;;
     'proxy-server')
       DOWNLOAD_CONF_LINK="https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/proxy_server_config.json"
       ;;
@@ -529,6 +532,7 @@ show_help() {
   echo '  --mode proxy-server  Install V2Ray proxy server with proxy_server_config.json'
   echo '  --mode proxy-client  Install V2Ray proxy client with proxy_client_config.json'
   echo '  --mode reverse-server Install V2Ray reverse proxy server with reverse_server_config.json'
+  echo '  --mode bridge-server  Install V2Ray bridge server (proxy + reverse) with bridge_server_config.json'
   echo '  --mode update-dat     Update geoip.dat and geosite.dat only'
   echo ''
   echo 'Options:'
@@ -540,11 +544,11 @@ show_help() {
   echo '  -l, --local       Install V2Ray from a local file'
   echo '  -p, --proxy       Download through a proxy server, e.g., -p http://127.0.0.1:8118 or -p socks5://127.0.0.1:1080'
   echo ''
-  echo 'Environment Variables (for proxy-client and reverse-server modes):'
+  echo 'Environment Variables (for proxy-client, reverse-server and bridge-server modes):'
   echo '  V2RAY_PROXY_SERVER_IP     Proxy server IP address (required for proxy-client)'
-  echo '  V2RAY_PROXY_ID          VMess user ID (required for proxy-server and proxy-client)'
+  echo '  V2RAY_PROXY_ID          VMess user ID (required for proxy-server, proxy-client, and bridge-server)'
   echo '  V2RAY_REVERSE_SERVER_IP  Reverse proxy server IP address (optional for proxy-client)'
-  echo '  V2RAY_REVERSE_ID         Reverse proxy user ID (required for reverse-server)'
+  echo '  V2RAY_REVERSE_ID         Reverse proxy user ID (required for reverse-server and bridge-server)'
   exit 0
 }
 
@@ -676,7 +680,7 @@ main() {
   fi
   
   case "$INSTALL_MODE" in
-    'proxy-server'|'proxy-client'|'reverse-server')
+    'proxy-server'|'proxy-client'|'reverse-server'|'bridge-server')
       cp -f "$CONFIG_FILE" "${JSON_PATH}/config.json"
       ;;
     *)
@@ -702,6 +706,11 @@ main() {
     'reverse-server')
       sed -i s/\{V2RAY_REVERSE_ID\}/${V2RAY_REVERSE_ID}/g "${JSON_PATH}/config.json"
       echo "info: Reverse proxy server mode installed."
+      ;;
+    'bridge-server')
+      sed -i s/\{V2RAY_PROXY_ID\}/${V2RAY_PROXY_ID}/g "${JSON_PATH}/config.json"
+      sed -i s/\{V2RAY_REVERSE_ID\}/${V2RAY_REVERSE_ID}/g "${JSON_PATH}/config.json"
+      echo "info: Bridge server mode installed."
       ;;
     *)
       echo "info: Standard mode installed."

@@ -25,6 +25,7 @@ installed: /etc/systemd/system/v2ray@.service
 - **代理服务端安装** - 快速部署 V2Ray 代理服务器
 - **代理客户端安装** - 配置客户端通过代理服务器访问网络
 - **反向代理服务端安装** - 实现内网服务穿透，从外网访问局域网服务
+- **桥接服务端安装** - 同时具备代理服务器和反向代理服务器功能
 - **Vultr 自动化部署** - 一键创建云服务器并自动安装配置 V2Ray
 - **预置配置模板** - 提供常用场景的配置文件模板
 
@@ -365,9 +366,29 @@ export V2RAY_REVERSE_ID="your-reverse-id"
 - 使用 VMess 协议建立隧道
 - 基于 SNI 路由，支持 HTTPS 流量转发
 
-**注意事项**：
-- 在安装 V2Ray 客户端的节点需要配置需要反向代理的域名解析到局域网 IP
 - 否则会导致报文循环处理
+
+#### 安装 V2Ray 桥接服务端
+
+同时实现代理服务和内网穿透功能。
+
+**环境变量设置**（必须）：
+- `V2RAY_PROXY_ID`: VMess 用户 ID
+- `V2RAY_REVERSE_ID`: 反向代理用户 ID
+
+```bash
+# 设置环境变量
+export V2RAY_PROXY_ID="your-vmess-id"
+export V2RAY_REVERSE_ID="your-reverse-id"
+
+# 安装桥接服务端
+# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) --mode bridge-server
+```
+
+**特性**：
+- 合并了 `proxy-server` 和 `reverse-server` 的所有功能
+- 代理服务使用 KCP 传输方式（端口 31523）
+- 反向代理支持多域名穿透
 
 ### 流量统计命令
 
@@ -500,6 +521,7 @@ export V2RAY_REVERSE_ID="your-reverse-id"
 | `proxy_client_config.json` | 代理客户端配置 |
 | `reverse_server_config.json` | 反向代理服务端配置 |
 | `reverse_client_config.json` | 反向代理客户端配置 |
+| `bridge_server_config.json` | 桥接服务端配置 (代理 + 反代) |
 | `server_config.json` | 通用服务器配置 |
 
 **使用方法**：
