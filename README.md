@@ -233,6 +233,47 @@ sudo ./configure-proxy.sh -d
 sudo ./configure-proxy.sh --remove
 ```
 
+### install-singbox-server.sh - sing-box Reality 服务器安装脚本
+
+`install-singbox-server.sh` 用于在 Linux 服务器上快速部署基于 VLESS + Reality + Vision 协议的 sing-box 服务器。
+
+#### 基本用法
+
+```bash
+# 一键安装（使用默认参数）
+sudo ./install-singbox-server.sh
+```
+
+#### 参数说明
+
+可以通过环境变量或命令行参数自定义配置：
+
+| 参数 | 环境变量 | 描述 | 默认值 |
+|------|----------|------|--------|
+| `--port` | `PORT` | 监听端口 | 443 |
+| `--domain` | `DOMAIN` | SNI 域名 (Reality 目标) | www.cloudflare.com |
+| `--uuid` | `UUID` | 用户 UUID | 自动生成 |
+| `--short-id` | `SHORT_ID` | Reality Short ID | 自动生成 |
+| `--log-level` | `LOG_LEVEL` | 日志级别 | info |
+
+#### 示例
+
+```bash
+# 自定义端口和域名
+sudo ./install-singbox-server.sh --port 8443 --domain google.com
+```
+
+#### 特性
+
+1. **全自动部署**：自动安装架构匹配的 sing-box 与依赖。
+2. **Reality 安全保障**：自动生成密钥对并配置 Reality 隧道。
+3. **防火墙自动配置**：支持 `ufw` 和 `firewalld` 自动放行端口。
+4. **多格式导出**：
+    - 通用 **VLESS 链接**。
+    - **Clash Verge 导入链接** (clash://)。
+    - **Clash Verge (Mihomo) 配置文件正文**。
+    - 详细的客户端手动配置参数。
+
 ### 统一安装脚本
 
 本项目已将所有安装脚本合并为一个统一脚本 `install-v2ray.sh`，通过 `--mode` 参数选择不同的安装模式。
