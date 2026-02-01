@@ -6,13 +6,13 @@
 
 # You can set these variables before running the script:
 # export PROXY_HOST='127.0.0.1'
-# export PROXY_PORT='7890'
+# export PROXY_PORT='7897'
 # export PROXY_TYPE='socks5'  # or 'http'
 # export PROXY_USER='username'  # optional
 # export PROXY_PASS='password'  # optional
 # export NO_PROXY='localhost,127.0.0.1,::1'  # optional
 PROXY_HOST=${PROXY_HOST:-127.0.0.1}
-PROXY_PORT=${PROXY_PORT:-7890}
+PROXY_PORT=${PROXY_PORT:-7897}
 PROXY_TYPE=${PROXY_TYPE:-socks5}
 PROXY_USER=${PROXY_USER:-}
 PROXY_PASS=${PROXY_PASS:-}
@@ -110,7 +110,7 @@ Applications:
 
 Options:
   -h, --host          Proxy host (default: 127.0.0.1)
-  -p, --port          Proxy port (default: 7890)
+  -p, --port          Proxy port (default: 7897)
   -t, --type          Proxy type: http or socks5 (default: socks5)
   -u, --user          Proxy username (optional)
   -w, --pass          Proxy password (optional)

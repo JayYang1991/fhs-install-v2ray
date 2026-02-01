@@ -2,9 +2,9 @@
 # Refactored create_vultr_instance.sh
 
 # --- Configuration (Externalized with Defaults) ---
-MY_REGION="${VULTR_REGION:-nrt}"
-MY_PLAN="${VULTR_PLAN:-vc2-1c-1gb}"
-MY_OS="${VULTR_OS:-2284}" # Ubuntu 24.04
+MY_REGION="${VULTR_REGION:-ewr}"
+MY_PLAN="${VULTR_PLAN:-vc2-1c-0.5gb-v6}"
+MY_OS="${VULTR_OS:-2288}" # Ubuntu 24.04
 MY_HOST="${VULTR_HOST:-jayyang}"
 MY_LABEL="${VULTR_LABEL:-ubuntu_2404}"
 MY_TAG="${VULTR_TAG:-v2ray}"
@@ -28,6 +28,7 @@ show_help() {
     echo "Options:"
     echo "  -u, --update-local    Enable local V2Ray configuration update (default: disabled)"
     echo "  -c, --update-clash    Enable local Clash configuration update (default: disabled)"
+    echo "  --clash-config-path   Local Clash configuration path"
     echo "  -h, --help            Show this help message"
     echo ""
     echo "Environment Variables:"

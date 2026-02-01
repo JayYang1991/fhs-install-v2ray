@@ -384,6 +384,7 @@ export V2RAY_REVERSE_ID="your-reverse-id"
 - 安装 [vultr-cli](https://github.com/vultr/vultr-cli) 工具
 - 配置 Vultr API Key
 - 准备 SSH 密钥
+- 安装 Python 3 及其 YAML 解析库 (用于 `--update-clash`): `sudo apt install python3 python3-yaml`
 
 ### 使用方法
 
@@ -398,7 +399,7 @@ export V2RAY_REVERSE_ID="your-reverse-id"
 # ./create_vultr_instance.sh --update-local
 
 # 创建实例并自动更新本地 Clash 配置文件 (针对 Clash Verge Rev/Mihomo)
-# ./create_vultr_instance.sh --update-clash
+# ./create_vultr_instance.sh --update-clash --clash-config-path /path/to/vultr-private.yaml
 ```
 
 **脚本功能**：
@@ -419,8 +420,20 @@ export V2RAY_REVERSE_ID="your-reverse-id"
 - `VULTR_REGION`: 数据中心区域（默认：ewr）
 - `VULTR_PLAN`: 实例规格（默认：vc2-1c-0.5gb-v6）
 - `VULTR_OS`: 操作系统 ID（默认：2288，Ubuntu 24.04）
+- `VULTR_HOST`: 实例主机名（默认：jayyang）
+- `VULTR_LABEL`: 实例标签（默认：ubuntu_2404）
+- `VULTR_TAG`: 实例标签（TAG）（默认：v2ray）
+- `VULTR_SSH_KEYS`: SSH 密钥 ID 列表（逗号分隔）
+- `VULTR_SCRIPT_ID`: 启动脚本 ID
+- `V2RAY_REPO_BRANCH`: 脚本仓库分支（默认：master）
+- `ENABLE_LOCAL_CONFIG`: 设置为 `true` 以启用 V2Ray 本地配置更新（等同于 `-u` 参数）
 - `ENABLE_CLASH_CONFIG`: 设置为 `true` 以启用 Clash 配置更新（等同于 `-c` 参数）
 - `CLASH_CONFIG_PATH`: 本地 Clash 配置文件路径
+- `SINGBOX_PORT`: sing-box 监听端口（默认：443）
+- `SINGBOX_DOMAIN`: sing-box SNI 域名 (Reality 目标)（默认：www.cloudflare.com）
+- `SINGBOX_UUID`: sing-box 用户 UUID
+- `SINGBOX_SHORT_ID`: sing-box Reality Short ID
+- `SINGBOX_LOG_LEVEL`: sing-box 日志级别
 
 ### 删除实例
 
@@ -530,6 +543,12 @@ export DAT_PATH='/usr/local/share/v2ray'
 
 # 设置配置文件路径（默认：/usr/local/etc/v2ray）
 export JSON_PATH='/usr/local/etc/v2ray'
+
+# 设置多配置文件路径（可选）
+export JSONS_PATH='/usr/local/etc/v2ray'
+
+# 检查所有服务文件（可选，默认：no）
+export check_all_service_files='yes'
 ```
 
 ### 代理服务端变量
