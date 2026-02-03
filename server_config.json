@@ -14,15 +14,12 @@
     "policy": {
         "levels": {
             "0": {
-                "statsUserUplink": true,
-                "statsUserDownlink": true
+                "handshake": 4,
+                "connIdle": 600,
+                "uplinkOnly": 10,
+                "downlinkOnly": 10,
+                "bufferSize": 0
             }
-        },
-        "system": {
-            "statsInboundUplink": true,
-            "statsInboundDownlink": true,
-            "statsOutboundUplink": true,
-            "statsOutboundDownlink": true
         }
     },
     "reverse": {
@@ -39,34 +36,23 @@
     },
     "inbounds": [
         {
-            "tag": "proxy",
             "port": 31523,
             "protocol": "vmess",
             "settings": {
                 "clients": [
                     {
-                        "email": "jayyang1024@gmail.com",
                         "id": "{V2RAY_PROXY_ID}",
-                        "level": 0,
-                        "alterId": 4,
-                        "security": "auto"
+                        "alterId": 0,
+                        "level": 0
                     }
                 ]
             },
             "streamSettings": {
-                "network": "kcp",
-                "kcpSettings": {
-                    "header": {
-                        "type": "dtls"
-                    }
+                "network": "ws",
+                "security": "none",
+                "wsSettings": {
+                    "path": "/jayyang"
                 }
-            },
-            "sniffing": {
-                "enabled": true,
-                "destOverride": [
-                    "http",
-                    "tls"
-                ]
             }
         },
         {
@@ -223,12 +209,5 @@
                 "type": "field"
             }
         ]
-    },
-    "transport": {
-        "kcpSettings": {
-            "uplinkCapacity": 100,
-            "downlinkCapacity": 100,
-            "congestion": true
-        }
     }
 }

@@ -11,50 +11,26 @@
             "StatsService"
         ]
     },
-    "policy": {
-        "levels": {
-            "0": {
-                "statsUserUplink": true,
-                "statsUserDownlink": true
-            }
-        },
-        "system": {
-            "statsInboundUplink": true,
-            "statsInboundDownlink": true,
-            "statsOutboundUplink": true,
-            "statsOutboundDownlink": true
-        }
-    },
+    
     "inbounds": [
         {
-            "tag": "proxy",
             "port": 31523,
             "protocol": "vmess",
             "settings": {
                 "clients": [
                     {
-                        "email": "jayyang1024@gmail.com",
                         "id": "{V2RAY_PROXY_ID}",
-                        "level": 0,
-                        "alterId": 4,
-                        "security": "auto"
+                        "alterId": 0,
+                        "level": 0
                     }
                 ]
             },
             "streamSettings": {
-                "network": "kcp",
-                "kcpSettings": {
-                    "header": {
-                        "type": "dtls"
-                    }
+                "network": "ws",
+                "security": "none",
+                "wsSettings": {
+                    "path": "/jayyang"
                 }
-            },
-            "sniffing": {
-                "enabled": true,
-                "destOverride": [
-                    "http",
-                    "tls"
-                ]
             }
         },
         {
@@ -68,19 +44,22 @@
         }
     ],
     "outbounds": [
-        {
+       {
             "protocol": "freedom",
-            "settings": {
-                "domainStrategy": "UseIP"
-            },
-            "tag": "direct"
-        },
-        {
-            "protocol": "blackhole",
-            "settings": {},
-            "tag": "blocked"
+            "settings": {}
         }
     ],
+    "policy": {
+        "levels": {
+            "0": {
+                "handshake": 4,
+                "connIdle": 600,
+                "uplinkOnly": 10,
+                "downlinkOnly": 10,
+                "bufferSize": 0
+            }
+        }
+    },
     "dns": {},
     "routing": {
         "domainStrategy": "IPOnDemand",
@@ -121,21 +100,7 @@
                     "bittorrent"
                 ],
                 "outboundTag": "blocked"
-            },
-            {
-                "inboundTag": [
-                    "api"
-                ],
-                "outboundTag": "api",
-                "type": "field"
             }
         ]
-    },
-    "transport": {
-        "kcpSettings": {
-            "uplinkCapacity": 100,
-            "downlinkCapacity": 100,
-            "congestion": true
-        }
     }
 }

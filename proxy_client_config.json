@@ -47,53 +47,37 @@
   ],
   "outbounds": [
     {
-      "tag": "proxy",
-      "protocol": "vmess",
-      "mux": {
-        "enabled": false,
-        "concurrency": 8
-      },
-      "streamSettings": {
-        "network": "kcp",
-        "kcpSettings": {
-          "header": {
-            "type": "dtls"
-          },
-          "mtu": 1350,
-          "congestion": false,
-          "tti": 20,
-          "uplinkCapacity": 50,
-          "writeBufferSize": 1,
-          "readBufferSize": 1,
-          "downlinkCapacity": 20
-        },
-        "security": "none",
-        "sockopt": {
-          "mark": 255
-        }
-      },
-      "settings": {
-        "vnext": [
-          {
-            "address": "{V2RAY_PROXY_SERVER_IP}",
-            "users": [
-              {
-                "id": "{V2RAY_PROXY_ID}",
-                "alterId": 4,
-                "level": 0,
-                "security": "auto"
-              }
-            ],
-            "port": 31523
-          }
-        ]
-      }
-    },
-    {
       "tag": "direct",
       "protocol": "freedom",
       "settings": {
         "domainStrategy": "UseIP"
+      }
+    },
+    {
+      "tag": "proxy",
+      "protocol": "vmess",
+      "settings": {
+        "vnext": [
+          {
+            "address": "{V2RAY_PROXY_SERVER_IP}",
+            "port": 31523,
+            "users": [
+              {
+                "id": "{V2RAY_PROXY_ID}",
+                "alterId": 0,
+                "security": "auto",
+                "level": 0
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "none",
+        "wsSettings": {
+          "path": "/jayyang"
+        }
       }
     },
     {
