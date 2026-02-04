@@ -1,0 +1,34 @@
+{
+  "log": {
+    "level": "info"
+  },
+  "inbounds": [
+    {
+      "type": "vmess",
+      "tag": "vmess-in",
+      "listen": "0.0.0.0",
+      "listen_port": 31523,
+      "users": [
+        {
+          "name": "proxy",
+          "uuid": "{V2RAY_PROXY_ID}",
+          "alter_id": 0
+        }
+      ],
+      "transport": {
+        "type": "grpc",
+        "service_name": "{V2RAY_GRPC_SERVICE_NAME}"
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "direct"
+    },
+    {
+      "type": "block",
+      "tag": "block"
+    }
+  ]
+}

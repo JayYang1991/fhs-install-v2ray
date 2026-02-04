@@ -48,10 +48,10 @@
                 ]
             },
             "streamSettings": {
-                "network": "ws",
+                "network": "grpc",
                 "security": "none",
-                "wsSettings": {
-                    "path": "/jayyang"
+                "grpcSettings": {
+                    "serviceName": "{V2RAY_GRPC_SERVICE_NAME}"
                 }
             }
         },

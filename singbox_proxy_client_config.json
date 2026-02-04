@@ -1,0 +1,92 @@
+{
+  "log": {
+    "level": "info"
+  },
+  "inbounds": [
+    {
+      "type": "tun",
+      "tag": "tun-in",
+      "interface_name": "tun0",
+      "address": [
+        "10.7.0.1/30",
+        "fd00::1/126"
+      ],
+      "mtu": 1500,
+      "auto_route": true,
+      "auto_redirect": true,
+      "stack": "system"
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "direct"
+    },
+    {
+      "type": "block",
+      "tag": "block"
+    },
+    {
+      "type": "vmess",
+      "tag": "proxy",
+      "server": "{V2RAY_PROXY_SERVER_IP}",
+      "server_port": 31523,
+      "uuid": "{V2RAY_PROXY_ID}",
+      "security": "auto",
+      "alter_id": 0,
+      "transport": {
+        "type": "grpc",
+        "service_name": "{V2RAY_GRPC_SERVICE_NAME}"
+      }
+    }
+  ],
+  "route": {
+    "auto_detect_interface": true,
+    "rules": [
+      {
+        "ip_is_private": true,
+        "outbound": "direct"
+      },
+      {
+        "rule_set": "geoip-cn",
+        "outbound": "direct"
+      }
+    ],
+    "rule_set": [
+      {
+        "type": "remote",
+        "tag": "geoip-cn",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/Loyalsoldier/geoip@release/srs/cn.srs",
+        "update_interval": "1d"
+      }
+    ],
+    "final": "proxy"
+  },
+  "dns": {
+    "servers": [
+      {
+        "tag": "local",
+        "address": "https://dns.alidns.com/dns-query",
+        "detour": "direct"
+      },
+      {
+        "tag": "remote",
+        "address": "https://cloudflare-dns.com/dns-query",
+        "detour": "proxy"
+      }
+    ],
+    "rules": [
+      {
+        "ip_is_private": true,
+        "server": "local"
+      },
+      {
+        "rule_set": "geoip-cn",
+        "server": "local"
+      }
+    ],
+    "final": "remote",
+    "strategy": "ipv4_only"
+  }
+}

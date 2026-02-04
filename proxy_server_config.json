@@ -26,20 +26,10 @@
                 ]
             },
             "streamSettings": {
-                "network": "kcp",
+                "network": "grpc",
                 "security": "none",
-                "kcpSettings": {
-                    "mtu": 1350,
-                    "tti": 100,
-                    "uplinkCapacity": 50,
-                    "downlinkCapacity": 200,
-                    "congestion": true,
-                    "readBufferSize": 8,
-                    "writeBufferSize": 8,
-                    "seed": "kcp-001",
-                    "header": {
-                        "type": "none"
-                    }
+                "grpcSettings": {
+                    "serviceName": "{V2RAY_GRPC_SERVICE_NAME}"
                 }
             }
         },
