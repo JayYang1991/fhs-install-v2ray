@@ -20,11 +20,11 @@ LOG_LEVEL=${LOG_LEVEL:-info}
 
 # ===================== Color Output =====================
 # Initialize color variables safely before set -e
-if [[ -t 1 ]] && [[ -n "$TERM" ]] && [[ "$TERM" != "dumb" ]] && command -v tput >/dev/null 2>&1; then
-  red=$(tput setaf 1 2>/dev/null || echo "")
-  green=$(tput setaf 2 2>/dev/null || echo "")
-  aoi=$(tput setaf 6 2>/dev/null || echo "")
-  reset=$(tput sgr0 2>/dev/null || echo "")
+if [[ -t 1 ]] && [[ -n "$TERM" ]] && [[ "$TERM" != "dumb" ]] && command -v tput > /dev/null 2>&1; then
+  red=$(tput setaf 1 2> /dev/null || echo "")
+  green=$(tput setaf 2 2> /dev/null || echo "")
+  aoi=$(tput setaf 6 2> /dev/null || echo "")
+  reset=$(tput sgr0 2> /dev/null || echo "")
 else
   red=""
   green=""
@@ -45,6 +45,7 @@ check_if_running_as_root() {
 
 identify_the_operating_system_and_architecture() {
   if [[ -f /etc/os-release ]]; then
+    # shellcheck disable=SC1091
     . /etc/os-release
     OS="$ID"
   else
@@ -81,13 +82,13 @@ urlencode() {
   local encoded=""
   local pos c o
 
-  for (( pos=0 ; pos<strlen ; pos++ )); do
-     c=${string:$pos:1}
-     case "$c" in
-        [-_.~a-zA-Z0-9] ) o="${c}" ;;
-        * )               printf -v o '%%%02x' "'$c"
-     esac
-     encoded+="${o}"
+  for ((pos = 0; pos < strlen; pos++)); do
+    c=${string:$pos:1}
+    case "$c" in
+      [-_.~a-zA-Z0-9]) o="${c}" ;;
+      *) printf -v o '%%%02x' "'$c" ;;
+    esac
+    encoded+="${o}"
   done
   echo "${encoded}"
 }
@@ -97,14 +98,14 @@ install_singbox() {
 
   if curl -fsSL https://sing-box.app/install.sh | sh; then
     local installed_version
-    installed_version=$(sing-box version 2>/dev/null | head -n1 || echo "unknown")
+    installed_version=$(sing-box version 2> /dev/null | head -n1 || echo "unknown")
     echo "${green}info: sing-box 已安装: $installed_version${reset}"
   else
     echo "${red}error: 安装 sing-box 失败${reset}"
     exit 1
   fi
 
-  if ! command -v sing-box >/dev/null 2>&1; then
+  if ! command -v sing-box > /dev/null 2>&1; then
     echo "${red}error: sing-box 命令未找到${reset}"
     exit 1
   fi
@@ -151,7 +152,7 @@ write_config() {
     exit 1
   }
 
-  if ! cat > /etc/sing-box/config.json <<EOF
+  if ! cat > /etc/sing-box/config.json << EOF; then
 {
   "log": {
     "level": "$LOG_LEVEL",
@@ -192,12 +193,11 @@ write_config() {
   ]
 }
 EOF
-  then
     echo "${red}error: 写入配置文件失败${reset}"
     exit 1
   fi
 
-  if ! sing-box check -c /etc/sing-box/config.json 2>/dev/null; then
+  if ! sing-box check -c /etc/sing-box/config.json 2> /dev/null; then
     echo "${red}error: 配置文件验证失败${reset}"
     exit 1
   fi
@@ -208,9 +208,9 @@ EOF
 configure_firewall() {
   echo "${aoi}info: 正在配置防火墙...${reset}"
 
-  if command -v ufw >/dev/null 2>&1; then
+  if command -v ufw > /dev/null 2>&1; then
     ufw allow "${PORT}/tcp" || true
-  elif command -v firewall-cmd >/dev/null 2>&1; then
+  elif command -v firewall-cmd > /dev/null 2>&1; then
     firewall-cmd --permanent --add-port="${PORT}/tcp" || true
     firewall-cmd --reload || true
   fi
@@ -245,18 +245,18 @@ start_service() {
 
 get_server_ip() {
   local server_ip=""
-  
-  if command -v curl >/dev/null 2>&1; then
-    server_ip=$(curl -s -4 ifconfig.me 2>/dev/null) || \
-    server_ip=$(curl -s -4 icanhazip.com 2>/dev/null) || \
-    server_ip=$(curl -s -4 ipecho.net/plain 2>/dev/null)
+
+  if command -v curl > /dev/null 2>&1; then
+    server_ip=$(curl -s -4 ifconfig.me 2> /dev/null) ||
+      server_ip=$(curl -s -4 icanhazip.com 2> /dev/null) ||
+      server_ip=$(curl -s -4 ipecho.net/plain 2> /dev/null)
   fi
-  
-  if [[ -z "$server_ip" ]] && command -v wget >/dev/null 2>&1; then
-    server_ip=$(wget -q -O - ifconfig.me 2>/dev/null) || \
-    server_ip=$(wget -q -O - icanhazip.com 2>/dev/null)
+
+  if [[ -z "$server_ip" ]] && command -v wget > /dev/null 2>&1; then
+    server_ip=$(wget -q -O - ifconfig.me 2> /dev/null) ||
+      server_ip=$(wget -q -O - icanhazip.com 2> /dev/null)
   fi
-  
+
   echo "$server_ip"
 }
 
@@ -269,7 +269,7 @@ generate_clash_verge_config() {
     return 1
   fi
 
-  cat <<EOF
+  cat << EOF
 proxies:
   - name: "sing-box-${server_ip}"
     type: vless
@@ -301,24 +301,24 @@ EOF
 generate_vless_link() {
   local server_ip
   server_ip=$(get_server_ip)
-  
+
   local remark
   remark=$(urlencode "sing-box-${server_ip}")
-  
+
   echo "vless://${UUID}@${server_ip}:${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${DOMAIN}&fp=chrome&pbk=${PUBLIC_KEY}&sid=${SHORT_ID}&type=tcp&headerType=none#${remark}"
 }
 
 generate_clash_uri() {
   local clash_config
   clash_config=$(generate_clash_verge_config)
-  
+
   if [[ -z "$clash_config" ]]; then
     return 1
   fi
-  
+
   local encoded_config
   encoded_config=$(urlencode "$clash_config")
-  
+
   echo "clash://install-config?content=${encoded_config}"
 }
 
@@ -364,18 +364,29 @@ print_info() {
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --port)
-      PORT="$2"; shift 2 ;;
+      PORT="$2"
+      shift 2
+      ;;
     --domain)
-      DOMAIN="$2"; shift 2 ;;
+      DOMAIN="$2"
+      shift 2
+      ;;
     --uuid)
-      UUID="$2"; shift 2 ;;
+      UUID="$2"
+      shift 2
+      ;;
     --short-id)
-      SHORT_ID="$2"; shift 2 ;;
+      SHORT_ID="$2"
+      shift 2
+      ;;
     --log-level)
-      LOG_LEVEL="$2"; shift 2 ;;
+      LOG_LEVEL="$2"
+      shift 2
+      ;;
     *)
       echo "${red}error: 未知参数: $1${reset}"
-      exit 1 ;;
+      exit 1
+      ;;
   esac
 done
 

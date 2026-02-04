@@ -26,10 +26,20 @@
                 ]
             },
             "streamSettings": {
-                "network": "ws",
+                "network": "kcp",
                 "security": "none",
-                "wsSettings": {
-                    "path": "/jayyang"
+                "kcpSettings": {
+                    "mtu": 1350,
+                    "tti": 100,
+                    "uplinkCapacity": 50,
+                    "downlinkCapacity": 200,
+                    "congestion": true,
+                    "readBufferSize": 8,
+                    "writeBufferSize": 8,
+                    "seed": "kcp-001",
+                    "header": {
+                        "type": "none"
+                    }
                 }
             }
         },

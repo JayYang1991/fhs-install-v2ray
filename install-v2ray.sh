@@ -26,6 +26,7 @@ JSON_PATH=${JSON_PATH:-/usr/local/etc/v2ray}
 
 # Set this variable only if you want this script to check all the systemd unit file:
 # export check_all_service_files='yes'
+check_all_service_files=${check_all_service_files:-no}
 
 # Installation mode: standard, proxy-server, proxy-client, reverse-server
 INSTALL_MODE=${INSTALL_MODE:-standard}
@@ -259,7 +260,8 @@ get_version() {
     RELEASE_MAJOR_VERSION_NUMBER="${RELEASE_VERSIONSION_NUMBER%%.*}"
     RELEASE_MINOR_VERSION_NUMBER="$(echo "$RELEASE_VERSIONSION_NUMBER" | awk -F '.' '{print $2}')"
     RELEASE_MINIMUM_VERSION_NUMBER="${RELEASE_VERSIONSION_NUMBER##*.}"
-    CURRENT_VERSION_NUMBER="$(echo "${CURRENT_VERSION#v}" | sed 's/-.*//')"
+    CURRENT_VERSION_NUMBER="${CURRENT_VERSION#v}"
+    CURRENT_VERSION_NUMBER="${CURRENT_VERSION_NUMBER%%-*}"
     CURRENT_MAJOR_VERSION_NUMBER="${CURRENT_VERSION_NUMBER%%.*}"
     CURRENT_MINOR_VERSION_NUMBER="$(echo "$CURRENT_VERSION_NUMBER" | awk -F '.' '{print $2}')"
     CURRENT_MINIMUM_VERSION_NUMBER="${CURRENT_VERSION_NUMBER##*.}"
@@ -301,7 +303,7 @@ download_v2ray() {
     echo 'error: This version does not support verification. Please replace with another version.'
     return 1
   fi
-  
+
   case "$INSTALL_MODE" in
     'bridge-server')
       DOWNLOAD_CONF_LINK="https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/server_config.json"
@@ -319,14 +321,14 @@ download_v2ray() {
       DOWNLOAD_CONF_LINK="https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/server_config.json"
       ;;
   esac
-  
+
   echo "Downloading V2Ray config: $DOWNLOAD_CONF_LINK"
   CONFIG_FILE="${TMP_DIRECTORY}/$(basename "$DOWNLOAD_CONF_LINK")"
   if ! curl -x "${PROXY}" -R -H 'Cache-Control: no-cache' -o "$CONFIG_FILE" "$DOWNLOAD_CONF_LINK"; then
     echo 'error: Download failed! Please check your network or try again.'
     return 1
   fi
-  
+
   CHECKSUM=$(awk -F '= ' '/256=/ {print $2}' < "${ZIP_FILE}.dgst")
   LOCALSUM=$(sha256sum "$ZIP_FILE" | awk '{printf $1}')
   if [[ "$CHECKSUM" != "$LOCALSUM" ]]; then
@@ -556,17 +558,17 @@ main() {
   check_if_running_as_root
   identify_the_operating_system_and_architecture
   judgment_parameters "$@"
-  
+
   install_software "$package_provide_tput" 'tput'
   red=$(tput setaf 1)
   green=$(tput setaf 2)
   aoi=$(tput setaf 6)
   reset=$(tput sgr0)
-  
+
   [[ "$HELP" -eq '1' ]] && show_help
   [[ "$CHECK" -eq '1' ]] && check_update
   [[ "$REMOVE" -eq '1' ]] && remove_v2ray
-  
+
   if [[ "$INSTALL_MODE" == 'update-dat' ]]; then
     install_software 'curl' 'curl'
     DOWNLOAD_LINK_GEOIP="https://github.com/v2fly/geoip/releases/latest/download/geoip.dat"
@@ -611,7 +613,7 @@ main() {
 
   TMP_DIRECTORY="$(mktemp -d)"
   ZIP_FILE="${TMP_DIRECTORY}/v2ray-linux-$MACHINE.zip"
-  
+
   if [[ "$LOCAL_INSTALL" -eq '1' ]]; then
     echo 'warn: Install V2Ray from a local file, but still need to make sure network is available.'
     echo -n 'warn: Please make sure the file is valid because we cannot confirm it. (Press any key) ...'
@@ -637,7 +639,7 @@ main() {
       exit 0
     fi
   fi
-  
+
   if systemctl list-unit-files | grep -qw 'v2ray'; then
     if [[ -n "$(pidof v2ray)" ]]; then
       stop_v2ray
@@ -678,51 +680,51 @@ main() {
     echo 'installed: /etc/systemd/system/v2ray.service'
     echo 'installed: /etc/systemd/system/v2ray@.service'
   fi
-  
+
   case "$INSTALL_MODE" in
-    'proxy-server'|'proxy-client'|'reverse-server'|'bridge-server')
+    'proxy-server' | 'proxy-client' | 'reverse-server' | 'bridge-server')
       cp -f "$CONFIG_FILE" "${JSON_PATH}/config.json"
       ;;
     *)
       [[ -f "$CONFIG_FILE" ]] && cp -f "$CONFIG_FILE" "${JSON_PATH}/config.json"
       ;;
   esac
-  
+
   "rm" -r "$TMP_DIRECTORY"
   echo "removed: $TMP_DIRECTORY"
-  
+
   case "$INSTALL_MODE" in
     'proxy-server')
-      sed -i s/\{V2RAY_PROXY_ID\}/${V2RAY_PROXY_ID}/g "${JSON_PATH}/config.json"
+      sed -i "s|{V2RAY_PROXY_ID}|${V2RAY_PROXY_ID}|g" "${JSON_PATH}/config.json"
       echo "info: Proxy server mode installed."
       ;;
     'proxy-client')
-      sed -i s/\{V2RAY_PROXY_SERVER_IP\}/${V2RAY_PROXY_SERVER_IP}/g "${JSON_PATH}/config.json"
-      sed -i s/\{V2RAY_PROXY_ID\}/${V2RAY_PROXY_ID}/g "${JSON_PATH}/config.json"
-      [[ -n "$V2RAY_REVERSE_SERVER_IP" ]] && sed -i s/\{V2RAY_REVERSE_SERVER_IP\}/${V2RAY_REVERSE_SERVER_IP}/g "${JSON_PATH}/config.json"
-      [[ -n "$V2RAY_REVERSE_ID" ]] && sed -i s/\{V2RAY_REVERSE_ID\}/${V2RAY_REVERSE_ID}/g "${JSON_PATH}/config.json"
+      sed -i "s|{V2RAY_PROXY_SERVER_IP}|${V2RAY_PROXY_SERVER_IP}|g" "${JSON_PATH}/config.json"
+      sed -i "s|{V2RAY_PROXY_ID}|${V2RAY_PROXY_ID}|g" "${JSON_PATH}/config.json"
+      [[ -n "$V2RAY_REVERSE_SERVER_IP" ]] && sed -i "s|{V2RAY_REVERSE_SERVER_IP}|${V2RAY_REVERSE_SERVER_IP}|g" "${JSON_PATH}/config.json"
+      [[ -n "$V2RAY_REVERSE_ID" ]] && sed -i "s|{V2RAY_REVERSE_ID}|${V2RAY_REVERSE_ID}|g" "${JSON_PATH}/config.json"
       echo "info: Proxy client mode installed."
       ;;
     'reverse-server')
-      sed -i s/\{V2RAY_REVERSE_ID\}/${V2RAY_REVERSE_ID}/g "${JSON_PATH}/config.json"
+      sed -i "s|{V2RAY_REVERSE_ID}|${V2RAY_REVERSE_ID}|g" "${JSON_PATH}/config.json"
       echo "info: Reverse proxy server mode installed."
       ;;
     'bridge-server')
-      sed -i s/\{V2RAY_PROXY_ID\}/${V2RAY_PROXY_ID}/g "${JSON_PATH}/config.json"
-      sed -i s/\{V2RAY_REVERSE_ID\}/${V2RAY_REVERSE_ID}/g "${JSON_PATH}/config.json"
+      sed -i "s|{V2RAY_PROXY_ID}|${V2RAY_PROXY_ID}|g" "${JSON_PATH}/config.json"
+      sed -i "s|{V2RAY_REVERSE_ID}|${V2RAY_REVERSE_ID}|g" "${JSON_PATH}/config.json"
       echo "info: Bridge server mode installed."
       ;;
     *)
       echo "info: Standard mode installed."
       ;;
   esac
-  
+
   if [[ "$LOCAL_INSTALL" -eq '1' ]]; then
     get_version
   fi
   echo "info: V2Ray $RELEASE_VERSION is installed."
   echo "You may need to execute a command to remove dependent software: $PACKAGE_MANAGEMENT_REMOVE curl unzip"
-  
+
   if [[ "$V2RAY_RUNNING" -eq '1' ]]; then
     start_v2ray
   else
@@ -731,8 +733,8 @@ main() {
     systemctl enable v2ray
     systemctl start v2ray
     if [[ "$INSTALL_MODE" != 'standard' ]]; then
-      ufw disable 2>/dev/null || true
-      iptables -F 2>/dev/null || true
+      ufw disable 2> /dev/null || true
+      iptables -F 2> /dev/null || true
     fi
   fi
 }
