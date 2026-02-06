@@ -29,6 +29,16 @@ installed: /etc/systemd/system/v2ray@.service
 - **Vultr 自动化部署** - 一键创建云服务器并自动安装配置 V2Ray
 - **预置配置模板** - 提供常用场景的配置文件模板
 
+## 配置模板说明
+
+本仓库包含多套可直接修改使用的配置模板（均含占位符）：
+
+- `proxy_server_config.json` / `proxy_client_config.json`：V2Ray 代理模板，当前使用 `gRPC` 传输，需同时设置 `{V2RAY_GRPC_SERVICE_NAME}`。
+- `singbox_proxy_client_config.json`：sing-box 客户端模板（TUN 模式），局域网与中国地址直连，其余走代理。
+- `singbox_proxy_server_config.json`：sing-box 服务端模板（VMess + gRPC）。
+
+注意：sing-box 客户端不支持 V2Ray KCP 传输，请使用 gRPC/WS 等受支持的传输方式。
+
 ## 重要提示
 
 **不推荐在 docker 中使用本项目安装 v2ray，请直接使用 [官方镜像](https://github.com/v2fly/docker)。**  

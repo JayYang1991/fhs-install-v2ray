@@ -1,0 +1,225 @@
+{
+  "log": {
+    "level": "warning",
+    "timestamp": true
+  },
+  "ntp": {
+    "enabled": true,
+    "server": "ntp.aliyun.com",
+    "server_port": 123,
+    "interval": "30m"
+  },
+  "dns": {
+    "cache_capacity": 4096,
+    "strategy": "ipv4_only",
+    "servers": [
+      {
+        "tag": "dns-resolver",
+        "type": "udp",
+        "server": "223.5.5.5"
+      },
+      {
+        "tag": "dns-proxy",
+        "type": "https",
+        "server": "1.1.1.1",
+        "server_port": 443,
+        "path": "/dns-query",
+        "tls": {
+          "enabled": true,
+          "server_name": "cloudflare-dns.com"
+        },
+        "detour": "sing-box-racknerd"
+      },
+      {
+        "tag": "dns-direct",
+        "type": "https",
+        "server": "dns.alidns.com",
+        "path": "/dns-query",
+        "domain_resolver": "dns-resolver"
+      },
+      {
+        "tag": "dns-fakeip",
+        "type": "fakeip",
+        "inet4_range": "198.18.0.0/15",
+        "inet6_range": "fc00::/18"
+      }
+    ],
+    "rules": [
+      {
+        "rule_set": [
+          "geosite-cn"
+        ],
+        "action": "route",
+        "server": "dns-direct"
+      },
+      {
+        "domain_suffix": [
+          "ntp.aliyun.com"
+        ],
+        "action": "route",
+        "server": "dns-direct"
+      },
+      {
+        "domain_keyword": [
+          "msftconnecttest.com",
+          "msftncsi.com"
+        ],
+        "action": "route",
+        "server": "dns-proxy"
+      },
+      {
+        "domain_keyword": [
+          "googleapis"
+        ],
+        "action": "route",
+        "server": "dns-proxy"
+      },
+      {
+        "query_type": [
+          "A",
+          "AAAA"
+        ],
+        "action": "route",
+        "server": "dns-fakeip",
+        "disable_cache": true
+      }
+    ],
+    "final": "dns-proxy"
+  },
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "direct"
+    },
+    {
+      "type": "vless",
+      "tag": "sing-box-racknerd",
+      "server": "{SINGBOX_SERVER_IP}",
+      "server_port": "{SINGBOX_PORT}",
+      "flow": "xtls-rprx-vision",
+      "uuid": "{SINGBOX_UUID}",
+      "tls": {
+        "enabled": true,
+        "server_name": "{SINGBOX_DOMAIN}",
+        "reality": {
+          "enabled": true,
+          "public_key": "{SINGBOX_PUBLIC_KEY}",
+          "short_id": "{SINGBOX_SHORT_ID}"
+        },
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      },
+      "multiplex": {
+        "enabled": false,
+        "protocol": "smux",
+        "max_connections": 8,
+        "min_streams": 4,
+        "max_streams": 0
+      }
+    }
+  ],
+  "inbounds": [
+    {
+      "type": "direct",
+      "listen": "127.0.0.1",
+      "tag": "dns-in",
+      "listen_port": 5350
+    },
+    {
+      "type": "mixed",
+      "tag": "mixed-in",
+      "listen": "127.0.0.1",
+      "listen_port": 4000,
+      "udp_timeout": "5m"
+    },
+    {
+      "type": "tun",
+      "tag": "tun-in",
+      "interface_name": "sing-tun0",
+      "address": [
+        "172.30.0.1/30"
+      ],
+      "mtu": 1280,
+      "auto_route": true,
+      "auto_redirect": true,
+      "route_exclude_address": [
+        "127.0.0.0/8",
+        "10.0.0.0/8",
+        "172.16.0.0/12",
+        "192.168.0.0/16"
+      ],
+      "route_address": [
+        "0.0.0.0/1",
+        "128.0.0.0/1"
+      ],
+      "stack": "system"
+    }
+  ],
+  "route": {
+    "rule_set": [
+      {
+        "tag": "geosite-cn",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-cn.srs",
+        "download_detour": "direct"
+      },
+      {
+        "tag": "geoip-cn",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geoip@rule-set/geoip-cn.srs",
+        "download_detour": "direct"
+      }
+    ],
+    "rules": [
+      {
+        "inbound": [
+          "dns-in"
+        ],
+        "action": "hijack-dns"
+      },
+      {
+        "port": 53,
+        "action": "hijack-dns"
+      },
+      {
+        "inbound": [
+          "mixed-in",
+          "tun-in"
+        ],
+        "action": "sniff",
+        "timeout": "300ms"
+      },
+      {
+        "protocol": "dns",
+        "action": "hijack-dns"
+      },
+      {
+        "rule_set": [
+          "geoip-cn",
+          "geosite-cn"
+        ],
+        "action": "route",
+        "outbound": "direct"
+      },
+      {
+        "ip_is_private": true,
+        "action": "route",
+        "outbound": "direct"
+      }
+    ],
+    "final": "sing-box-racknerd",
+    "auto_detect_interface": true,
+    "default_domain_resolver": {
+      "server": "dns-proxy"
+    }
+  },
+  "experimental": {
+    "cache_file": {
+      "enabled": true
+    }
+  }
+}

@@ -5,18 +5,18 @@
 # Reference: https://sing-box.sagernet.org/
 #
 # Environment Variables:
-#   PORT              - Listening port (default: 443)
-#   DOMAIN            - Server Name Indication (default: www.cloudflare.com)
-#   UUID              - Client UUID (default: auto-generated)
-#   SHORT_ID          - Reality short ID (default: auto-generated)
-#   LOG_LEVEL         - Log level (default: info)
+#   SINGBOX_PORT      - Listening port (default: 443)
+#   SINGBOX_DOMAIN    - Server Name Indication (default: www.cloudflare.com)
+#   SINGBOX_UUID      - Client UUID (default: auto-generated)
+#   SINGBOX_SHORT_ID  - Reality short ID (default: auto-generated)
+#   SINGBOX_LOG_LEVEL - Log level (default: info)
 #
 # ===================== Default Parameters =====================
-PORT=${PORT:-443}
-DOMAIN=${DOMAIN:-www.cloudflare.com}
-UUID=${UUID:-auto}
-SHORT_ID=${SHORT_ID:-auto}
-LOG_LEVEL=${LOG_LEVEL:-info}
+SINGBOX_PORT=${SINGBOX_PORT:-${PORT:-443}}
+SINGBOX_DOMAIN=${SINGBOX_DOMAIN:-${DOMAIN:-www.cloudflare.com}}
+SINGBOX_UUID=${SINGBOX_UUID:-${UUID:-auto}}
+SINGBOX_SHORT_ID=${SINGBOX_SHORT_ID:-${SHORT_ID:-auto}}
+SINGBOX_LOG_LEVEL=${SINGBOX_LOG_LEVEL:-${LOG_LEVEL:-info}}
 
 # ===================== Color Output =====================
 # Initialize color variables safely before set -e
@@ -33,6 +33,10 @@ else
 fi
 
 set -e
+
+# ===================== Download URLs =====================
+SINGBOX_SERVER_TEMPLATE_URL="https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/singbox_server_config.json"
+SINGBOX_CLIENT_TEMPLATE_URL="https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/singbox_client_config.json"
 
 # ===================== Functions =====================
 
@@ -75,22 +79,14 @@ curl() {
   $(type -P curl) -L -q --retry 5 --retry-delay 10 --retry-max-time 60 "$@"
 }
 
-urlencode() {
-  # usage: urlencode "string"
-  local string="${1}"
-  local strlen=${#string}
-  local encoded=""
-  local pos c o
+escape_sed_replacement() {
+  echo "$1" | sed -e 's/[&|/]/\\&/g'
+}
 
-  for ((pos = 0; pos < strlen; pos++)); do
-    c=${string:$pos:1}
-    case "$c" in
-      [-_.~a-zA-Z0-9]) o="${c}" ;;
-      *) printf -v o '%%%02x' "'$c" ;;
-    esac
-    encoded+="${o}"
-  done
-  echo "${encoded}"
+cleanup_temp() {
+  if [[ -n "$TEMPLATE_DIR" ]] && [[ -d "$TEMPLATE_DIR" ]]; then
+    "rm" -r "$TEMPLATE_DIR"
+  fi
 }
 
 install_singbox() {
@@ -107,6 +103,22 @@ install_singbox() {
 
   if ! command -v sing-box > /dev/null 2>&1; then
     echo "${red}error: sing-box 命令未找到${reset}"
+    exit 1
+  fi
+}
+
+download_templates() {
+  echo "${aoi}info: 正在下载配置模板...${reset}"
+
+  TEMPLATE_DIR=$(mktemp -d)
+
+  if ! curl -R -H 'Cache-Control: no-cache' -o "${TEMPLATE_DIR}/singbox_server_config.json" "$SINGBOX_SERVER_TEMPLATE_URL"; then
+    echo "${red}error: 下载服务端模板失败: $SINGBOX_SERVER_TEMPLATE_URL${reset}"
+    exit 1
+  fi
+
+  if ! curl -R -H 'Cache-Control: no-cache' -o "${TEMPLATE_DIR}/singbox_client_config.json" "$SINGBOX_CLIENT_TEMPLATE_URL"; then
+    echo "${red}error: 下载客户端模板失败: $SINGBOX_CLIENT_TEMPLATE_URL${reset}"
     exit 1
   fi
 }
@@ -147,62 +159,68 @@ generate_keys() {
 write_config() {
   echo "${aoi}info: 正在写入配置文件...${reset}"
 
+  local server_template
+  local client_template
+  local server_ip
+  local server_config_path="/etc/sing-box/config.json"
+  local client_config_path="/etc/sing-box/client_config.json"
+
+  server_template="${TEMPLATE_DIR}/singbox_server_config.json"
+  client_template="${TEMPLATE_DIR}/singbox_client_config.json"
+
+  if [[ ! -f "$server_template" ]]; then
+    echo "${red}error: 未找到服务端模板: $server_template${reset}"
+    exit 1
+  fi
+
+  if [[ ! -f "$client_template" ]]; then
+    echo "${red}error: 未找到客户端模板: $client_template${reset}"
+    exit 1
+  fi
+
   mkdir -p /etc/sing-box || {
     echo "${red}error: 创建配置目录失败${reset}"
     exit 1
   }
 
-  if ! cat > /etc/sing-box/config.json << EOF; then
-{
-  "log": {
-    "level": "$LOG_LEVEL",
-    "timestamp": true
-  },
-  "inbounds": [
-    {
-      "type": "vless",
-      "tag": "vless-reality",
-      "listen": "::",
-      "listen_port": $PORT,
-      "users": [
-        {
-          "uuid": "$UUID",
-          "flow": "xtls-rprx-vision"
-        }
-      ],
-      "tls": {
-        "enabled": true,
-        "server_name": "$DOMAIN",
-        "reality": {
-          "enabled": true,
-          "handshake": {
-            "server": "$DOMAIN",
-            "server_port": 443
-          },
-          "private_key": "$PRIVATE_KEY",
-          "short_id": ["$SHORT_ID"]
-        }
-      }
-    }
-  ],
-  "outbounds": [
-    {
-      "type": "direct",
-      "tag": "direct"
-    }
-  ]
-}
-EOF
+  if ! sed \
+    -e "s|{SINGBOX_LOG_LEVEL}|$(escape_sed_replacement "${LOG_LEVEL}")|g" \
+    -e "s|{SINGBOX_PORT}|${PORT}|g" \
+    -e "s|{SINGBOX_UUID}|$(escape_sed_replacement "${UUID}")|g" \
+    -e "s|{SINGBOX_DOMAIN}|$(escape_sed_replacement "${DOMAIN}")|g" \
+    -e "s|{SINGBOX_PRIVATE_KEY}|$(escape_sed_replacement "${PRIVATE_KEY}")|g" \
+    -e "s|{SINGBOX_SHORT_ID}|$(escape_sed_replacement "${SHORT_ID}")|g" \
+    "$server_template" > "$server_config_path"; then
     echo "${red}error: 写入配置文件失败${reset}"
     exit 1
   fi
 
-  if ! sing-box check -c /etc/sing-box/config.json 2> /dev/null; then
+  if ! sing-box check -c "$server_config_path" 2> /dev/null; then
     echo "${red}error: 配置文件验证失败${reset}"
     exit 1
   fi
 
   echo "${green}info: 配置文件验证通过${reset}"
+
+  server_ip=$(get_server_ip)
+  if [[ -z "$server_ip" ]]; then
+    echo "${red}error: 无法获取服务器 IP 地址${reset}"
+    exit 1
+  fi
+
+  if ! sed \
+    -e "s|{SINGBOX_SERVER_IP}|$(escape_sed_replacement "${server_ip}")|g" \
+    -e "s|{SINGBOX_PORT}|${PORT}|g" \
+    -e "s|{SINGBOX_UUID}|$(escape_sed_replacement "${UUID}")|g" \
+    -e "s|{SINGBOX_DOMAIN}|$(escape_sed_replacement "${DOMAIN}")|g" \
+    -e "s|{SINGBOX_PUBLIC_KEY}|$(escape_sed_replacement "${PUBLIC_KEY}")|g" \
+    -e "s|{SINGBOX_SHORT_ID}|$(escape_sed_replacement "${SHORT_ID}")|g" \
+    "$client_template" > "$client_config_path"; then
+    echo "${red}error: 写入客户端配置文件失败${reset}"
+    exit 1
+  fi
+
+  CLIENT_CONFIG_PATH="$client_config_path"
 }
 
 configure_firewall() {
@@ -260,127 +278,36 @@ get_server_ip() {
   echo "$server_ip"
 }
 
-generate_clash_verge_config() {
-  local server_ip
-  server_ip=$(get_server_ip)
-
-  if [[ -z "$server_ip" ]]; then
-    echo "${red}error: 无法获取服务器 IP 地址${reset}"
-    return 1
-  fi
-
-  cat << EOF
-proxies:
-  - name: "sing-box-${server_ip}"
-    type: vless
-    server: ${server_ip}
-    port: ${PORT}
-    uuid: ${UUID}
-    network: tcp
-    tls: true
-    udp: true
-    flow: xtls-rprx-vision
-    servername: ${DOMAIN}
-    reality-opts:
-      public-key: ${PUBLIC_KEY}
-      short-id: ${SHORT_ID}
-    client-fingerprint: chrome
-
-proxy-groups:
-  - name: "PROXY"
-    type: select
-    proxies:
-      - sing-box-${server_ip}
-      - DIRECT
-
-rules:
-  - MATCH,PROXY
-EOF
-}
-
-generate_vless_link() {
-  local server_ip
-  server_ip=$(get_server_ip)
-
-  local remark
-  remark=$(urlencode "sing-box-${server_ip}")
-
-  echo "vless://${UUID}@${server_ip}:${PORT}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${DOMAIN}&fp=chrome&pbk=${PUBLIC_KEY}&sid=${SHORT_ID}&type=tcp&headerType=none#${remark}"
-}
-
-generate_clash_uri() {
-  local clash_config
-  clash_config=$(generate_clash_verge_config)
-
-  if [[ -z "$clash_config" ]]; then
-    return 1
-  fi
-
-  local encoded_config
-  encoded_config=$(urlencode "$clash_config")
-
-  echo "clash://install-config?content=${encoded_config}"
-}
-
 print_info() {
-  local server_ip
-  server_ip=$(get_server_ip)
-
-  echo ""
-  echo "========================================"
-  echo "${green}✅ sing-box Server 安装完成${reset}"
-  echo ""
-  echo "📌 客户端参数："
-  echo "协议: VLESS"
-  echo "地址: $server_ip"
-  echo "端口: $PORT"
-  echo "UUID: $UUID"
-  echo "Reality 公钥: $PUBLIC_KEY"
-  echo "SNI: $DOMAIN"
-  echo "short_id: $SHORT_ID"
-  echo "传输: TCP"
-  echo ""
-  echo "📌 Clash Verge 导入方式："
-  echo ""
-  echo "方式1 - 手动添加节点："
-  echo "  点击「添加节点」→ 选择「VLESS」"
-  echo "  填写上述参数"
-  echo ""
-  echo "方式2 - VLESS 链接 (通用)："
-  generate_vless_link
-  echo ""
-  echo "方式3 - Clash 导入链接 (Clash Verge)："
-  generate_clash_uri
-  echo ""
-  echo "方式4 - 手动复制 Clash 配置内容："
-  echo "--- 配置开始 ---"
-  generate_clash_verge_config
-  echo "--- 配置结束 ---"
-  echo ""
-  echo "========================================"
+  if [[ -n "$CLIENT_CONFIG_PATH" ]]; then
+    echo "客户端配置文件: $CLIENT_CONFIG_PATH"
+  else
+    echo "${red}error: 未生成客户端配置文件${reset}"
+    exit 1
+  fi
 }
 
 # ===================== Parse Arguments =====================
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --port)
-      PORT="$2"
+      SINGBOX_PORT="$2"
       shift 2
       ;;
     --domain)
-      DOMAIN="$2"
+      SINGBOX_DOMAIN="$2"
       shift 2
       ;;
     --uuid)
-      UUID="$2"
+      SINGBOX_UUID="$2"
       shift 2
       ;;
     --short-id)
-      SHORT_ID="$2"
+      SINGBOX_SHORT_ID="$2"
       shift 2
       ;;
     --log-level)
-      LOG_LEVEL="$2"
+      SINGBOX_LOG_LEVEL="$2"
       shift 2
       ;;
     *)
@@ -392,6 +319,14 @@ done
 
 # ===================== Main Function =====================
 main() {
+  PORT="$SINGBOX_PORT"
+  DOMAIN="$SINGBOX_DOMAIN"
+  UUID="$SINGBOX_UUID"
+  SHORT_ID="$SINGBOX_SHORT_ID"
+  LOG_LEVEL="$SINGBOX_LOG_LEVEL"
+
+  trap cleanup_temp EXIT
+
   echo "${aoi}▶ sing-box Server 自动安装开始${reset}"
   echo "端口: $PORT"
   echo "SNI: $DOMAIN"
@@ -410,6 +345,7 @@ main() {
 
   install_dependencies
   install_singbox
+  download_templates
   generate_keys
   write_config
   configure_firewall

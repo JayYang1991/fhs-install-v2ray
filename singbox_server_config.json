@@ -1,0 +1,48 @@
+{
+  "log": {
+    "level": "{SINGBOX_LOG_LEVEL}",
+    "timestamp": true
+  },
+  "inbounds": [
+    {
+      "type": "vless",
+      "tag": "vless-reality",
+      "listen": "0.0.0.0",
+      "listen_port": "{SINGBOX_PORT}",
+      "users": [
+        {
+          "uuid": "{SINGBOX_UUID}",
+          "flow": "xtls-rprx-vision"
+        }
+      ],
+      "tls": {
+        "enabled": true,
+        "server_name": "{SINGBOX_DOMAIN}",
+        "reality": {
+          "enabled": true,
+          "handshake": {
+            "server": "{SINGBOX_DOMAIN}",
+            "server_port": 443
+          },
+          "private_key": "{SINGBOX_PRIVATE_KEY}",
+          "short_id": [
+            "{SINGBOX_SHORT_ID}"
+          ]
+        }
+      },
+      "multiplex": {
+        "enabled": true,
+        "protocol": "smux",
+        "max_connections": 8,
+        "min_streams": 4,
+        "max_streams": 0
+      }
+    }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "direct"
+    }
+  ]
+}
