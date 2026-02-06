@@ -29,9 +29,6 @@
             "{SINGBOX_SHORT_ID}"
           ]
         }
-      },
-      "multiplex": {
-        "enabled": false
       }
     }
   ],

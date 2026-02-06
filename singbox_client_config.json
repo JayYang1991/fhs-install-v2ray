@@ -109,13 +109,6 @@
           "enabled": true,
           "fingerprint": "chrome"
         }
-      },
-      "multiplex": {
-        "enabled": false,
-        "protocol": "smux",
-        "max_connections": 8,
-        "min_streams": 4,
-        "max_streams": 0
       }
     }
   ],
@@ -163,14 +156,14 @@
         "type": "remote",
         "format": "binary",
         "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-cn.srs",
-        "download_detour": "Auto-Select-All"
+        "download_detour": "direct"
       },
       {
         "tag": "geoip-cn",
         "type": "remote",
         "format": "binary",
         "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geoip@rule-set/geoip-cn.srs",
-        "download_detour": "Auto-Select-All"
+        "download_detour": "direct"
       }
     ],
     "rules": [
