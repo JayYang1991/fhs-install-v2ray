@@ -81,7 +81,7 @@
         ],
         "action": "route",
         "server": "dns-fakeip",
-        "disable_cache": true
+        "disable_cache": false
       }
     ],
     "final": "dns-proxy"
@@ -227,7 +227,9 @@
   },
   "experimental": {
     "cache_file": {
-      "enabled": true
+      "enabled": true,
+      "path": "/var/lib/sing-box/cache.db",
+      "store_fakeip": true
     }
   }
 }
