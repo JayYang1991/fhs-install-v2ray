@@ -176,6 +176,14 @@
     ],
     "rules": [
       {
+        "ip_cidr": [
+          "207.148.109.122/32",
+          "155.94.241.65/32"
+        ],
+        "action": "route",
+        "outbound": "direct"
+      },
+      {
         "inbound": [
           "dns-in"
         ],
