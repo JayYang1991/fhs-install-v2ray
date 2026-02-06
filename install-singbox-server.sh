@@ -186,6 +186,8 @@ write_config() {
   if ! sed \
     -e "s|{SINGBOX_LOG_LEVEL}|$(escape_sed_replacement "${LOG_LEVEL}")|g" \
     -e "s|\"{SINGBOX_PORT}\"|${PORT}|g" \
+    -e "s|{SINGBOX_PORT}|${PORT}|g" \
+    -e "s|\"listen_port\"[[:space:]]*:[[:space:]]*\"${PORT}\"|\"listen_port\": ${PORT}|g" \
     -e "s|{SINGBOX_UUID}|$(escape_sed_replacement "${UUID}")|g" \
     -e "s|{SINGBOX_DOMAIN}|$(escape_sed_replacement "${DOMAIN}")|g" \
     -e "s|{SINGBOX_PRIVATE_KEY}|$(escape_sed_replacement "${PRIVATE_KEY}")|g" \
@@ -212,6 +214,8 @@ write_config() {
   if ! sed \
     -e "s|{SINGBOX_SERVER_IP}|$(escape_sed_replacement "${server_ip}")|g" \
     -e "s|\"{SINGBOX_PORT}\"|${PORT}|g" \
+    -e "s|{SINGBOX_PORT}|${PORT}|g" \
+    -e "s|\"server_port\"[[:space:]]*:[[:space:]]*\"${PORT}\"|\"server_port\": ${PORT}|g" \
     -e "s|{SINGBOX_UUID}|$(escape_sed_replacement "${UUID}")|g" \
     -e "s|{SINGBOX_DOMAIN}|$(escape_sed_replacement "${DOMAIN}")|g" \
     -e "s|{SINGBOX_PUBLIC_KEY}|$(escape_sed_replacement "${PUBLIC_KEY}")|g" \
