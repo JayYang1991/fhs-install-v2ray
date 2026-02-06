@@ -139,10 +139,7 @@ install_singbox() {
   # shellcheck disable=SC2087
   output=$(
     ssh -T -o StrictHostKeyChecking=no "root@${VPS_IP}" << eof
-    set -e
-    export DEBIAN_FRONTEND=noninteractive
     dpkg --configure -a || true
-    apt update || true
     if command -v sing-box > /dev/null 2>&1; then
       systemctl stop sing-box > /dev/null 2>&1 || true
       apt remove -y sing-box || true
