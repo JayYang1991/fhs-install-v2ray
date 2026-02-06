@@ -152,18 +152,28 @@ eof
   )
   local ret_val=$?
 
-  if [[ $ret_val -eq 0 ]]; then
-    remote_client_config=$(echo "$output" | awk -F': ' '/客户端配置文件/ {print $2}' | tail -n 1 | tr -d '\r')
-    if [[ -z "$remote_client_config" ]]; then
-      remote_client_config="/etc/sing-box/client_config.json"
-    fi
-
-    tmp_client_config=$(mktemp -p /tmp singbox_client_config.XXXXXX.json)
-    scp -o StrictHostKeyChecking=no "root@${VPS_IP}:${remote_client_config}" "$tmp_client_config" > /dev/null 2>&1 || true
-    echo "客户端配置文件已保存到本地: $tmp_client_config"
-  else
+  if [[ $ret_val -ne 0 ]]; then
+    echo "error: 远端安装 sing-box 失败"
     return 1
   fi
+
+  remote_client_config=$(echo "$output" | awk -F': ' '/客户端配置文件/ {print $2}' | tail -n 1 | tr -d '\r')
+  if [[ -z "$remote_client_config" ]]; then
+    echo "error: 未从远端输出获取客户端配置文件路径"
+    return 1
+  fi
+
+  tmp_client_config=$(mktemp -p /tmp singbox_client_config.XXXXXX.json)
+  if ! scp -o StrictHostKeyChecking=no "root@${VPS_IP}:${remote_client_config}" "$tmp_client_config" > /dev/null 2>&1; then
+    echo "error: 下载远端客户端配置文件失败: $remote_client_config"
+    return 1
+  fi
+  if [[ ! -s "$tmp_client_config" ]]; then
+    echo "error: 本地客户端配置文件为空: $tmp_client_config"
+    return 1
+  fi
+
+  echo "客户端配置文件已保存到本地: $tmp_client_config"
 }
 
 # --- Main Logic ---
