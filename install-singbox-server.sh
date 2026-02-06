@@ -163,7 +163,7 @@ write_config() {
   local client_template
   local server_ip
   local server_config_path="/etc/sing-box/config.json"
-  local client_config_path="/etc/sing-box/client_config.json"
+  local client_config_path
 
   server_template="${TEMPLATE_DIR}/singbox_server_config.json"
   client_template="${TEMPLATE_DIR}/singbox_client_config.json"
@@ -208,6 +208,7 @@ write_config() {
     exit 1
   fi
 
+  client_config_path=$(mktemp -p /tmp singbox_client_config.XXXXXX.json)
   if ! sed \
     -e "s|{SINGBOX_SERVER_IP}|$(escape_sed_replacement "${server_ip}")|g" \
     -e "s|\"{SINGBOX_PORT}\"|${PORT}|g" \
