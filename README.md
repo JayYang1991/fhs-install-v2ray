@@ -298,6 +298,33 @@ export V2RAY_REVERSE_ID="your-reverse-id"
 # bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) --help
 ```
 
+## 配置工具
+
+除了静态模板外，本项目还提供了一个自动化合并工具，用于将第三方客户端（如 Clash Verge）的代理节点合并到 sing-box 配置中。
+
+### merge_configs.py - 配置合并脚本
+
+`merge_configs.py` 是一个 Python 脚本，支持将 Clash Verge (Mihomo) 导出的 YAML 配置文件中的节点转换为 sing-box 格式，并与现有的 sing-box 节点合并。
+
+#### 主要功能
+- **全节点合并**：自动提取并在 sing-box 中保留原有节点，同时加入 Clash 节点。
+- **智能策略组**：自动创建一个名为 `Auto-Select-All` 的 `urltest` 组，包含所有合并的节点，实现毫秒级自动优选。
+- **协议支持**：支持 VLESS (Reality/gRPC/WS)、Hysteria2、Shadowsocks、Trojan 等主流协议转换。
+- **自定义输出**：支持指定输出文件路径。
+
+#### 使用方法
+```bash
+# 确保已安装 PyYAML 库
+# pip install PyYAML
+
+python3 merge_configs.py <singbox_json_path> <clash_yaml_path> <output_path>
+```
+
+#### 示例
+```bash
+python3 merge_configs.py /etc/sing-box/config.json ~/.local/share/io.github.clash-verge-rev.clash-verge-rev/clash-verge.yaml final_config.json
+```
+
 ## 配置文件模板
 
 项目提供了多种配置文件模板，位于项目根目录：
