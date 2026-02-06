@@ -142,6 +142,11 @@ install_singbox() {
     export DEBIAN_FRONTEND=noninteractive
     dpkg --configure -a || true
     apt update || true
+    if command -v sing-box > /dev/null 2>&1; then
+      systemctl stop sing-box > /dev/null 2>&1 || true
+      apt remove -y sing-box || true
+      "rm" -rf /etc/sing-box || true
+    fi
     bash <(curl -L -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/${REPO_BRANCH}/install-singbox-server.sh) --port ${port} --domain ${domain} --uuid ${uuid} --short-id ${short_id} --log-level ${log_level}
 eof
   )
