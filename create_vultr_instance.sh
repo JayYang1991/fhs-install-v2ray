@@ -139,6 +139,7 @@ install_singbox() {
   # shellcheck disable=SC2087
   output=$(
     ssh -T -o StrictHostKeyChecking=no "root@${VPS_IP}" << eof
+    set -e
     export DEBIAN_FRONTEND=noninteractive
     dpkg --configure -a || true
     apt update || true
@@ -147,7 +148,8 @@ install_singbox() {
       apt remove -y sing-box || true
       "rm" -rf /etc/sing-box || true
     fi
-    bash <(curl -L -H 'Cache-Control: no-cache' https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/${REPO_BRANCH}/install-singbox-server.sh) --port ${port} --domain ${domain} --uuid ${uuid} --short-id ${short_id} --log-level ${log_level}
+    curl -4 -L -q --retry 5 --retry-delay 10 --retry-max-time 60 -H 'Cache-Control: no-cache' -o /tmp/install-singbox-server.sh https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/${REPO_BRANCH}/install-singbox-server.sh
+    bash /tmp/install-singbox-server.sh --port ${port} --domain ${domain} --uuid ${uuid} --short-id ${short_id} --log-level ${log_level}
 eof
   )
   local ret_val=$?
