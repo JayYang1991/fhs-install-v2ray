@@ -104,12 +104,16 @@ def main():
     clash_path = sys.argv[2] if len(sys.argv) > 2 else os.path.expanduser("~/.local/share/io.github.clash-verge-rev.clash-verge-rev/clash-verge.yaml")
     output_path = sys.argv[3] if len(sys.argv) > 3 else "optimized_singbox_config.json"
     
-    # 自动重定向环境测试路径
+    # 环境测试路径自动校准
     if not os.path.exists(sb_path) and os.path.exists("./config.json") and sb_path == "/etc/sing-box/config.json":
         sb_path = "./config.json"
+    if not os.path.exists(sb_path) and os.path.exists("./singbox_client_config.json") and sb_path == "/etc/sing-box/config.json":
+        sb_path = "./singbox_client_config.json"
     
-    if not os.path.exists(clash_path) and os.path.exists("./clash-verge.yaml") and "clash-verge.yaml" in clash_path:
+    if not os.path.exists(clash_path) and os.path.exists("./clash-verge.yaml"):
         clash_path = "./clash-verge.yaml"
+    if not os.path.exists(clash_path) and os.path.exists(os.path.expanduser("~/clash-verge.yaml")):
+        clash_path = os.path.expanduser("~/clash-verge.yaml")
 
     if not os.path.exists(sb_path):
         print(f"Error: Sing-box config not found at {sb_path}")
@@ -127,37 +131,50 @@ def main():
     with open(clash_path, 'r') as f:
         clash_config = yaml.safe_load(f)
     
-    # 提取 Sing-box 原有的代理节点
-    existing_outbounds = sb_config.get('outbounds', [])
-    existing_proxy_tags = [o.get('tag') for o in existing_outbounds if o.get('type') in PROXY_TYPES]
+    # 分类 Sing-box 原有的 outbounds
+    old_outbounds = sb_config.get('outbounds', [])
+    non_proxy_outbounds = [] # direct, dns 等
+    original_proxies = {}   # tag -> config
+    
+    # 按照在原配置中的出现顺序记录
+    for o in old_outbounds:
+        tag = o.get('tag')
+        if o.get('type') in PROXY_TYPES:
+            original_proxies[tag] = o
+        elif tag not in ["Clash-Auto", "Auto-Select-All"]:
+            non_proxy_outbounds.append(o)
     
     # 转换 Clash 代理节点
     clash_proxies = clash_config.get('proxies', [])
     new_clash_outbounds = []
     new_clash_tags = []
     
-    # 记录已使用的 tag，防止重复
-    all_used_tags = {o.get('tag') for o in existing_outbounds}
-    
     for p in clash_proxies:
         sb_out = convert_clash_to_singbox(p)
         if sb_out:
             tag = sb_out['tag']
-            if tag in all_used_tags:
-                tag = f"{tag}-clash"
-                sb_out['tag'] = tag
+            # 如果存在同名节点，则从原有代理池中移除（标记为已由 Clash 替换）
+            if tag in original_proxies:
+                print(f"[*] Overwriting existing proxy: {tag}")
+                del original_proxies[tag]
             
             new_clash_outbounds.append(sb_out)
             new_clash_tags.append(tag)
-            all_used_tags.add(tag)
     
-    # 合并所有代理节点到一个列表 (Clash 节点在前，Sing-box 原有节点在后)
-    all_proxy_tags = new_clash_tags + existing_proxy_tags
+    # 剩余的 original_proxies 就是没被 Clash 替换的 SB 节点
+    remaining_sb_proxies = list(original_proxies.values())
+    remaining_sb_tags = [o.get('tag') for o in remaining_sb_proxies]
+    
+    # 构建最终的 outbounds 列表
+    # 顺序：基础出站 (direct等) -> Clash 节点 -> Sing-box 剩余节点 -> 策略组
+    final_outbounds = non_proxy_outbounds + new_clash_outbounds + remaining_sb_proxies
+    
+    all_proxy_tags = new_clash_tags + remaining_sb_tags
     
     if not all_proxy_tags:
-        print("Warning: No proxy nodes found in either config.")
+        print("Warning: No proxy nodes found.")
     else:
-        # 创建统一的自动选择组
+        # 创建自动选择组
         urltest_group = {
             "type": "urltest",
             "tag": "Auto-Select-All",
@@ -166,24 +183,19 @@ def main():
             "interval": "3m",
             "tolerance": 50
         }
+        final_outbounds.append(urltest_group)
         
-        # 清理旧的自动选择组（如果有）
-        sb_config["outbounds"] = [o for o in existing_outbounds if o.get('tag') != "Clash-Auto" and o.get('tag') != "Auto-Select-All"]
-        
-        # 添加新节点和组
-        sb_config["outbounds"].extend(new_clash_outbounds)
-        sb_config["outbounds"].append(urltest_group)
-        
-        # 更新路由规则的默认出口（可选，这里保持灵活，不强制修改 final，但通常用户希望最终指向这个组）
-        # 如果需要自动修改 final 出口，可以取消下面注释：
-        # if "route" in sb_config and "final" in sb_config["route"]:
-        #     sb_config["route"]["final"] = "Auto-Select-All"
+        # 强制将 final 路由指向这个组（逻辑优化：如果存在 final 路由）
+        if "route" in sb_config:
+            sb_config["route"]["final"] = "Auto-Select-All"
+
+    sb_config["outbounds"] = final_outbounds
 
     with open(output_path, 'w') as f:
         json.dump(sb_config, f, indent=2, ensure_ascii=False)
     
-    print(f"[+] Successfully merged {len(existing_proxy_tags)} (SB) + {len(new_clash_tags)} (Clash) proxies.")
-    print(f"[+] Combined group 'Auto-Select-All' created.")
+    print(f"[+] Successfully merged/replaced proxies.")
+    print(f"[+] Combined group 'Auto-Select-All' contains {len(all_proxy_tags)} nodes.")
     print(f"[+] Saved to: {output_path}")
 
 if __name__ == "__main__":

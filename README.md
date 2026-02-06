@@ -310,6 +310,8 @@ export V2RAY_REVERSE_ID="your-reverse-id"
 - **全节点合并**：自动提取并在 sing-box 中保留原有节点，同时加入 Clash 节点。
 - **智能策略组**：自动创建一个名为 `Auto-Select-All` 的 `urltest` 组，包含所有合并的节点，实现毫秒级自动优选。
 - **协议支持**：支持 VLESS (Reality/gRPC/WS)、Hysteria2、Shadowsocks、Trojan 等主流协议转换。
+- **智能合并与去重**：如果 Clash 配置文件中的节点名称与 Sing-box 现有节点冲突，脚本将强制使用 Clash 的配置覆盖原有节点，避免重复。
+- **灵活排序**：默认将所有代理节点合并至 `Auto-Select-All` 组，Clash 节点排在前面，Sing-box 原始节点排在最后。
 - **自定义输出**：支持指定输出文件路径。
 
 #### 使用方法
