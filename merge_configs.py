@@ -151,8 +151,8 @@ def main():
             new_clash_tags.append(tag)
             all_used_tags.add(tag)
     
-    # 合并所有代理节点到一个列表
-    all_proxy_tags = existing_proxy_tags + new_clash_tags
+    # 合并所有代理节点到一个列表 (Clash 节点在前，Sing-box 原有节点在后)
+    all_proxy_tags = new_clash_tags + existing_proxy_tags
     
     if not all_proxy_tags:
         print("Warning: No proxy nodes found in either config.")
