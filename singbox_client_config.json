@@ -76,8 +76,7 @@
       },
       {
         "query_type": [
-          "A",
-          "AAAA"
+          "A"
         ],
         "action": "route",
         "server": "dns-fakeip",
@@ -164,14 +163,14 @@
         "type": "remote",
         "format": "binary",
         "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-cn.srs",
-        "download_detour": "direct"
+        "download_detour": "Auto-Select-All"
       },
       {
         "tag": "geoip-cn",
         "type": "remote",
         "format": "binary",
         "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geoip@rule-set/geoip-cn.srs",
-        "download_detour": "direct"
+        "download_detour": "Auto-Select-All"
       }
     ],
     "rules": [
