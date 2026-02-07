@@ -139,6 +139,13 @@ def main():
             "nameserver": ["https://dns.alidns.com/dns-query", "https://doh.pub/dns-query"],
             "fallback": ["https://1.1.1.1/dns-query", "https://8.8.8.8/dns-query"]
         },
+        "tun": {
+            "enable": True,
+            "stack": "system",
+            "auto-route": True,
+            "auto-detect-interface": True,
+            "dns-hijack": ["any:53", "tcp://any:53"]
+        },
         "proxies": proxies,
         "proxy-groups": [
             {
