@@ -7,6 +7,7 @@ set -e
 
 # --- 默认配置 ---
 FRP_PORT=7000
+FRP_VHOST_HTTPS_PORT=443
 FRP_TOKEN=""
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -17,9 +18,10 @@ show_help() {
     echo "Usage: $0 [OPTIONS]"
     echo ""
     echo "Options:"
-    echo "  -p, --port PORT       Specify frps bind port (default: 7000)"
-    echo "  -t, --token TOKEN     Specify auth token (default: auto-generated)"
-    echo "  -h, --help            Show this help message"
+    echo "  -p, --port PORT           Specify frps bind port (default: 7000)"
+    echo "  -t, --token TOKEN         Specify auth token (default: auto-generated)"
+    echo "  --vhost-https PORT        Specify vhost HTTPS port (default: 443)"
+    echo "  -h, --help                Show this help message"
 }
 
 log() {
@@ -43,6 +45,7 @@ while [[ "$#" -gt 0 ]]; do
     case $1 in
         -p|--port) FRP_PORT="$2"; shift ;;
         -t|--token) FRP_TOKEN="$2"; shift ;;
+        --vhost-https) FRP_VHOST_HTTPS_PORT="$2"; shift ;;
         -h|--help) show_help; exit 0 ;;
         *) warn "Unknown argument: $1"; show_help; exit 1 ;;
     esac
@@ -78,6 +81,7 @@ log "Creating configuration..."
 sudo mkdir -p /etc/frp
 sudo cat > /tmp/frps.toml << EOF
 bindPort = ${FRP_PORT}
+vhostHTTPSPort = ${FRP_VHOST_HTTPS_PORT}
 auth.method = "token"
 auth.token = "${FRP_TOKEN}"
 EOF
@@ -107,9 +111,10 @@ sudo systemctl restart frps
 # --- 总结 ---
 log "FRP server installed successfully!"
 echo "------------------------------------------------"
-echo -e "${GREEN}Bind Port :${NC} ${FRP_PORT}"
-echo -e "${GREEN}Auth Token:${NC} ${FRP_TOKEN}"
+echo -e "${GREEN}Bind Port   :${NC} ${FRP_PORT}"
+echo -e "${GREEN}vhost HTTPS :${NC} ${FRP_VHOST_HTTPS_PORT}"
+echo -e "${GREEN}Auth Token  :${NC} ${FRP_TOKEN}"
 echo "------------------------------------------------"
 log "Configuration: /etc/frp/frps.toml"
 log "Service: systemctl status frps"
-warn "Please ensure port ${FRP_PORT} is open in your firewall."
+warn "Please ensure ports ${FRP_PORT} and ${FRP_VHOST_HTTPS_PORT} are open in your firewall."

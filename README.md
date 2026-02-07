@@ -233,17 +233,18 @@ bash setup_vps_server.sh --ip 1.2.3.4 --user myuser --force
 #### 使用方法
 
 ```bash
-# 默认安装 (随机生成 Token，监听 7000 端口)
+# 默认安装 (随机生成 Token，监听 7000 和 443 端口)
 bash install-frp.sh
 
 # 指定端口与 Token
-bash install-frp.sh --port 7001 --token mypassword123
+bash install-frp.sh --port 7001 --vhost-https 444 --token mypassword123
 ```
 
 **脚本功能**：
 - 自动识别架构 (amd64/arm64)。
 - 自动从 GitHub 下载最新版本。
 - 自动生成 16 位随机安全令牌。
+- **HTTPS 穿透支持**：默认监听 443 端口作为 HTTPS 入门，支持域名分发。
 - 自动创建并启动 `frps.service` (Systemd)。
  --help
 
