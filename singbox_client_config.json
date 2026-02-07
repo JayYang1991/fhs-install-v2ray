@@ -206,14 +206,14 @@
         "tag": "geoip-google",
         "type": "remote",
         "format": "binary",
-        "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geoip@rule-set/geoip-google.srs",
+        "url": "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@sing/geo/geoip/google.srs",
         "download_detour": "direct"
       },
       {
         "tag": "geoip-telegram",
         "type": "remote",
         "format": "binary",
-        "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geoip@rule-set/geoip-telegram.srs",
+        "url": "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@sing/geo/geoip/telegram.srs",
         "download_detour": "direct"
       },
       {
@@ -297,7 +297,7 @@
   "experimental": {
     "cache_file": {
       "enabled": true,
-      "path": "/var/lib/sing-box/cache.db",
+      "path": "cache.db",
       "store_fakeip": true
     }
   }
