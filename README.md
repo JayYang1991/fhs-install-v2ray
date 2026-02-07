@@ -244,8 +244,12 @@ bash install-frp.sh --port 7001 --vhost-https 444 --token mypassword123
 - 自动识别架构 (amd64/arm64)。
 - 自动从 GitHub 下载最新版本。
 - 自动生成 16 位随机安全令牌。
-- **HTTPS 穿透支持**：默认监听 443 端口作为 HTTPS 入门，支持域名分发。
+- **HTTPS 穿透支持**：默认监听 443 端口作为 HTTPS 入口，支持域名分发。
+- **自动引导配置**：安装完成后自动输出针对内网 Nginx 承载多域名的 `frpc.toml` 示例。
 - 自动创建并启动 `frps.service` (Systemd)。
+
+#### 进阶场景：内网多域名分发
+若您在内网由一台 Nginx 服务器分发多个域名，只需在内网 `frpc` 中配置一个 `https` 类型的代理，并将所有域名加入 `customDomains` 列表，转发至内网 Nginx 的 443 端口即可。
  --help
 
 # 创建实例并安装 sing-box
