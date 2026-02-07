@@ -143,10 +143,14 @@ eof
 
   local remote_client_config=$(echo "$output" | awk -F': ' '/客户端配置文件/ {print $2}' | tail -n 1 | tr -d '\r')
   if [[ -n "$remote_client_config" ]]; then
-    local local_dest="./singbox_client_config.json"
-    log "Downloading client config to $local_dest..."
-    scp -o StrictHostKeyChecking=no "${SSH_USER}@${VPS_IP}:${remote_client_config}" "$local_dest" > /dev/null 2>&1
-    log "Done. Client config saved."
+    local local_dest
+    local_dest=$(mktemp -p /tmp singbox_client_config.XXXXXX.json)
+    log "Downloading client config from remote..."
+    if scp -o StrictHostKeyChecking=no "${SSH_USER}@${VPS_IP}:${remote_client_config}" "$local_dest" > /dev/null 2>&1; then
+      log "Done. Client config saved at: $(readlink -f "$local_dest")"
+    else
+      warn "Failed to download client config from ${VPS_IP}"
+    fi
   fi
 }
 
