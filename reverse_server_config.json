@@ -27,11 +27,11 @@
     },
     "reverse": {
         "portals": [
-	    {
+            {
                 "tag": "ssl_portal_desktop",
                 "domain": "private.desktop.jason.com"
             },
-	    {
+            {
                 "tag": "ssl_portal_nas",
                 "domain": "private.nas.jason.com"
             }
@@ -47,10 +47,13 @@
                 "port": 443,
                 "network": "tcp,udp"
             },
-	    "sniffing": {
+            "sniffing": {
                 "enabled": true,
-                "destOverride": ["http","tls"],
-		"routeOnly": true
+                "destOverride": [
+                    "http",
+                    "tls"
+                ],
+                "routeOnly": true
             }
         },
         {
@@ -96,7 +99,10 @@
                     "qnap.jayyang.cn",
                     "proxymgr.jayyang.cn",
                     "www.jayyang.cn",
-		    "ubuntu.jayyang.cn"
+                    "ubuntu.jayyang.cn",
+                    "books.jayyang.cn",
+                    "guacamole.jayyang.cn",
+                    "vscode.jayyang.cn"
                 ],
                 "outboundTag": "ssl_portal_nas"
             },
@@ -109,13 +115,13 @@
                     "full:private.nas.jason.com"
                 ],
                 "outboundTag": "ssl_portal_nas"
-	    },
-	    {
+            },
+            {
                 "type": "field",
                 "inboundTag": [
                     "extern_ssl"
                 ],
-		"domain": [
+                "domain": [
                     "jayyang.cn"
                 ],
                 "outboundTag": "ssl_portal_desktop"
