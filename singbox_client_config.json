@@ -47,14 +47,37 @@
     "rules": [
       {
         "rule_set": [
+          "geosite-google",
+          "geosite-youtube",
+          "geosite-telegram",
+          "geosite-discord"
+        ],
+        "action": "route",
+        "server": "dns-proxy"
+      },
+      {
+        "rule_set": [
           "geosite-cn"
         ],
         "action": "route",
         "server": "dns-direct"
       },
       {
+        "domain": [
+          "localhost.ptlogin2.qq.com",
+          "www.msftconnecttest.com"
+        ],
         "domain_suffix": [
-          "ntp.aliyun.com"
+          ".lan",
+          ".local",
+          ".arpa",
+          "ntp.aliyun.com",
+          ".market.xiaomi.com",
+          ".msftncsi.com"
+        ],
+        "domain_regex": [
+          "^time\\..*\\.com$",
+          "^ntp\\..*\\.com$"
         ],
         "action": "route",
         "server": "dns-direct"
@@ -152,6 +175,48 @@
   "route": {
     "rule_set": [
       {
+        "tag": "geosite-google",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-google.srs",
+        "download_detour": "direct"
+      },
+      {
+        "tag": "geosite-youtube",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-youtube.srs",
+        "download_detour": "direct"
+      },
+      {
+        "tag": "geosite-telegram",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-telegram.srs",
+        "download_detour": "direct"
+      },
+      {
+        "tag": "geosite-discord",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-discord.srs",
+        "download_detour": "direct"
+      },
+      {
+        "tag": "geoip-google",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geoip@rule-set/geoip-google.srs",
+        "download_detour": "direct"
+      },
+      {
+        "tag": "geoip-telegram",
+        "type": "remote",
+        "format": "binary",
+        "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geoip@rule-set/geoip-telegram.srs",
+        "download_detour": "direct"
+      },
+      {
         "tag": "geosite-cn",
         "type": "remote",
         "format": "binary",
@@ -196,6 +261,18 @@
       {
         "protocol": "dns",
         "action": "hijack-dns"
+      },
+      {
+        "rule_set": [
+          "geosite-google",
+          "geosite-youtube",
+          "geosite-telegram",
+          "geosite-discord",
+          "geoip-google",
+          "geoip-telegram"
+        ],
+        "action": "route",
+        "outbound": "sing-box-racknerd"
       },
       {
         "rule_set": [
