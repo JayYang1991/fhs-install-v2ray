@@ -300,9 +300,10 @@ export V2RAY_REVERSE_ID="your-reverse-id"
 
 ## 配置工具
 
-除了静态模板外，本项目还提供了一个自动化合并工具，用于将第三方客户端（如 Clash Verge）的代理节点合并到 sing-box 配置中。
+本仓库提供了两个强大的配置处理工具：
 
-### merge_configs.py - 配置合并脚本
+#### 1. `merge_configs.py` (Clash -> Sing-box)
+该工具用于将外部 Clash 节点的代理信息合并到现有的 Sing-box 配置文件中。
 
 `merge_configs.py` 是一个 Python 脚本，支持将 Clash Verge (Mihomo) 导出的 YAML 配置文件中的节点转换为 sing-box 格式，并与现有的 sing-box 节点合并。
 
@@ -320,6 +321,23 @@ export V2RAY_REVERSE_ID="your-reverse-id"
 # pip install PyYAML
 
 python3 merge_configs.py <singbox_json_path> <clash_yaml_path> <output_path>
+```
+
+#### 2. `sb_to_clash.py` (Sing-box -> Clash)
+该工具用于将现有的 Sing-box 配置文件转换为 Clash Verge (Mihomo) 格式。
+
+**特性：**
+- **协议转换**：支持将 VLESS (Reality/gRPC/WS)、Hysteria2、Shadowsocks、Trojan 从 Sing-box 格式转换为 Clash 格式。
+- **自动模板**：自动生成完整的 Clash 配置文件，包含优化的 DNS 设置、策略组（手动选择、自动优选）以及常用路由规则。
+- **自定义路径**：支持指定输入 Sing-box 路径和输出 YAML 路径。
+
+**使用方法：**
+```bash
+# 默认转换 (输入 /etc/sing-box/config.json, 输出当前目录 clash_config.yaml)
+python3 sb_to_clash.py
+
+# 自定义路径
+python3 sb_to_clash.py /path/to/singbox.json /path/to/output.yaml
 ```
 
 #### 示例
