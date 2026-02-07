@@ -205,20 +205,30 @@ export V2RAY_REVERSE_ID="your-reverse-id"
 
 ### 前置条件
 
-- 安装 [vultr-cli](https://github.com/vultr/vultr-cli) 工具
-- 配置 Vultr API Key
-- 准备 SSH 密钥
+### 1. 自动化 VPS 安装部署 (`setup_vps_server.sh`)
 
-### 使用方法
+该脚本是一个通用的 VPS 远程安装工具。它支持两种模式：
+1. **直接安装模式**：通过 IP 地址为任何云厂商（如阿里云、腾讯云、RackNerd 等）的 VPS 远程安装 Sing-box。
+2. **Vultr 自动创建模式**：使用 `vultr-cli` 自动创建实例、等待 IP 分配并完成安装。
+
+#### 使用方法
 
 ```bash
-# 查看帮助
-# ./create_vultr_instance.sh --help
+# 模式 A：通过 IP 直接安装 (适用于已有 VPS)
+bash setup_vps_server.sh --ip 8.137.160.254
+
+# 模式 B：Vultr 自动创建并安装
+bash setup_vps_server.sh --vultr
+
+# 可选参数示例：
+# --user 指定 SSH 用户名 (默认 root)
+# --force 强制重新安装 (先卸载旧版本)
+bash setup_vps_server.sh --ip 1.2.3.4 --user myuser --force
+```
+ --help
 
 # 创建实例并安装 sing-box
 # ./create_vultr_instance.sh
-```
-
 **脚本功能**：
 - 自动检测并安装依赖 (`vultr-cli`, `curl` 等)
 - 自动创建 Vultr 实例（默认配置：Ubuntu 24.04，1核 0.5GB）
