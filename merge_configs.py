@@ -197,7 +197,7 @@ def main():
         urltest_group = {
             "type": "urltest",
             "tag": group_tag,
-            "outbounds": all_proxy_tags,
+            "outbounds": all_proxy_tags + ["direct"],
             "url": "http://www.gstatic.com/generate_204",
             "interval": "3m",
             "tolerance": 50
