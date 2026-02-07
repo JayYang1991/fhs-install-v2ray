@@ -123,6 +123,35 @@ def main():
         print("Warning: No proxy outbounds found in Sing-box config.")
         sys.exit(1)
 
+    # 自动提取 FakeIP 过滤域名 (扫描指向非 FakeIP 服务的 DNS 规则)
+    fake_ip_filter = ["*.lan", "*.local", "*.arpa"]
+    dns_rules = sb_config.get('dns', {}).get('rules', [])
+    for rule in dns_rules:
+        # 寻找指向 dns-direct 或非 dns-fakeip 的规则
+        if rule.get('server') != 'dns-fakeip' and rule.get('action') == 'route':
+            domains = rule.get('domain', [])
+            if isinstance(domains, str): domains = [domains]
+            fake_ip_filter.extend(domains)
+
+            suffixes = rule.get('domain_suffix', [])
+            if isinstance(suffixes, str): suffixes = [suffixes]
+            for s in suffixes:
+                if not s.startswith('.') and not s.startswith('*'):
+                    fake_ip_filter.append(f"+.{s}")
+                else:
+                    fake_ip_filter.append(f"*{s}" if s.startswith('.') else s)
+            
+            # 处理正则转换 (简单处理通配符)
+            regexes = rule.get('domain_regex', [])
+            if isinstance(regexes, str): regexes = [regexes]
+            for r in regexes:
+                if r.startswith('^') and r.endswith('$'):
+                    clean_r = r[1:-1].replace('\\.', '.').replace('.*', '*')
+                    fake_ip_filter.append(clean_r)
+
+    # 去重并保持顺序
+    fake_ip_filter = list(dict.fromkeys(fake_ip_filter))
+
     # Clash 基础配置模板
     clash_template = {
         "port": 7890,
@@ -136,6 +165,7 @@ def main():
             "default-nameserver": ["223.5.5.5", "119.29.29.29"],
             "enhanced-mode": "fake-ip",
             "fake-ip-range": "198.18.0.1/16",
+            "fake-ip-filter": fake_ip_filter,
             "nameserver": ["https://dns.alidns.com/dns-query", "https://doh.pub/dns-query"],
             "fallback": ["https://1.1.1.1/dns-query", "https://8.8.8.8/dns-query"]
         },
