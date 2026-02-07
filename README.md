@@ -215,15 +215,15 @@ export V2RAY_REVERSE_ID="your-reverse-id"
 
 ```bash
 # 模式 A：通过 IP 直接安装 (适用于已有 VPS)
-bash setup_vps_server.sh --ip 8.137.160.254
+bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/setup_vps_server.sh) --ip 8.137.160.254
 
 # 模式 B：Vultr 自动创建并安装
-bash setup_vps_server.sh --vultr
+bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/setup_vps_server.sh) --vultr
 
 # 可选参数示例：
 # --user 指定 SSH 用户名 (默认 root)
 # --force 强制重新安装 (先卸载旧版本)
-bash setup_vps_server.sh --ip 1.2.3.4 --user myuser --force
+bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/setup_vps_server.sh) --ip 1.2.3.4 --user myuser --force
 ```
 
 ### 2. FRP 服务端一键安装 (`install-frp.sh`)
@@ -234,10 +234,10 @@ bash setup_vps_server.sh --ip 1.2.3.4 --user myuser --force
 
 ```bash
 # 默认安装 (随机生成 Token，监听 7000 和 443 端口)
-bash install-frp.sh
+bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-frp.sh)
 
 # 指定端口与 Token
-bash install-frp.sh --port 7001 --vhost-https 444 --token mypassword123
+bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-frp.sh) --port 7001 --vhost-https 444 --token mypassword123
 ```
 
 **脚本功能**：
