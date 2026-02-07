@@ -156,7 +156,7 @@ def main():
     clash_template = {
         "port": 7890,
         "socks-port": 7891,
-        "allow-lan": True,
+        "allow-lan": False,
         "mode": "rule",
         "log-level": "info",
         "dns": {
