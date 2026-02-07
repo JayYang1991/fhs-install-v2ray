@@ -83,6 +83,7 @@ bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/m
 |------|----------|------|--------|
 | `--port` | `SINGBOX_PORT` | 监听端口 | 443 |
 | `--domain` | `SINGBOX_DOMAIN` | SNI 域名 (Reality 目标) | www.cloudflare.com |
+| `-f`, `--force` | | 强制安装（安装前自动执行卸载逻辑，清理旧版本） | |
 | `--uuid` | `SINGBOX_UUID` | 用户 UUID | 自动生成 |
 | `--short-id` | `SINGBOX_SHORT_ID` | Reality Short ID | 自动生成 |
 | `--log-level` | `SINGBOX_LOG_LEVEL` | 日志级别 | info |

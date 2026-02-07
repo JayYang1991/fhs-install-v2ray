@@ -17,6 +17,7 @@ SINGBOX_DOMAIN=${SINGBOX_DOMAIN:-${DOMAIN:-www.cloudflare.com}}
 SINGBOX_UUID=${SINGBOX_UUID:-${UUID:-auto}}
 SINGBOX_SHORT_ID=${SINGBOX_SHORT_ID:-${SHORT_ID:-auto}}
 SINGBOX_LOG_LEVEL=${SINGBOX_LOG_LEVEL:-${LOG_LEVEL:-info}}
+FORCE_INSTALL=false
 
 # ===================== Color Output =====================
 # Initialize color variables safely before set -e
@@ -105,6 +106,29 @@ install_singbox() {
     echo "${red}error: sing-box 命令未找到${reset}"
     exit 1
   fi
+}
+
+uninstall_singbox() {
+  echo "${aoi}info: 正在执行强制卸载...${reset}"
+
+  if systemctl is-active --quiet sing-box; then
+    echo "${aoi}info: 正在停止 sing-box 服务...${reset}"
+    systemctl stop sing-box || true
+  fi
+
+  if systemctl is-enabled --quiet sing-box; then
+    echo "${aoi}info: 正在禁用 sing-box 服务...${reset}"
+    systemctl disable sing-box || true
+  fi
+
+  echo "${aoi}info: 正在清理二进制文件和配置...${reset}"
+  rm -f /usr/local/bin/sing-box || true
+  rm -f /etc/systemd/system/sing-box.service || true
+  systemctl daemon-reload || true
+  
+  # 注意：这里我们保留 /etc/sing-box 目录，安装过程中会自动覆盖其中的 config.json
+  # 但会清理旧的验证通过标志等
+  echo "${green}info: 卸载完成${reset}"
 }
 
 download_templates() {
@@ -315,6 +339,10 @@ while [[ $# -gt 0 ]]; do
       SINGBOX_LOG_LEVEL="$2"
       shift 2
       ;;
+    -f|--force)
+      FORCE_INSTALL=true
+      shift
+      ;;
     *)
       echo "${red}error: 未知参数: $1${reset}"
       exit 1
@@ -349,6 +377,11 @@ main() {
   fi
 
   install_dependencies
+
+  if [[ "$FORCE_INSTALL" == "true" ]]; then
+    uninstall_singbox
+  fi
+
   install_singbox
   download_templates
   generate_keys
