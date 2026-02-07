@@ -108,6 +108,9 @@ sudo systemctl daemon-reload
 sudo systemctl enable frps
 sudo systemctl restart frps
 
+# --- 获取公网 IP (用于引导提示) ---
+SERVER_IP=$(curl -s https://ifconfig.me || echo "VPS_IP")
+
 # --- 总结 ---
 log "FRP server installed successfully!"
 echo "------------------------------------------------"
@@ -118,3 +121,23 @@ echo "------------------------------------------------"
 log "Configuration: /etc/frp/frps.toml"
 log "Service: systemctl status frps"
 warn "Please ensure ports ${FRP_PORT} and ${FRP_VHOST_HTTPS_PORT} are open in your firewall."
+
+echo ""
+log "Client Configuration Example (frpc.toml):"
+echo "------------------------------------------------"
+cat << EOF
+serverAddr = "${SERVER_IP}"
+serverPort = ${FRP_PORT}
+auth.method = "token"
+auth.token = "${FRP_TOKEN}"
+
+# 场景：内网 Nginx 承载多域名分发
+[[proxies]]
+name = "https-multi-domain"
+type = "https"
+customDomains = ["www.yourdomain.com", "api.yourdomain.com"]
+[proxies.localSvc]
+addr = "127.0.0.1"
+port = 443
+EOF
+echo "------------------------------------------------"
