@@ -225,6 +225,26 @@ bash setup_vps_server.sh --vultr
 # --force 强制重新安装 (先卸载旧版本)
 bash setup_vps_server.sh --ip 1.2.3.4 --user myuser --force
 ```
+
+### 2. FRP 服务端一键安装 (`install-frp.sh`)
+
+该脚本用于在 Linux 服务器上一键部署 FRP 服务端 (frps)。
+
+#### 使用方法
+
+```bash
+# 默认安装 (随机生成 Token，监听 7000 端口)
+bash install-frp.sh
+
+# 指定端口与 Token
+bash install-frp.sh --port 7001 --token mypassword123
+```
+
+**脚本功能**：
+- 自动识别架构 (amd64/arm64)。
+- 自动从 GitHub 下载最新版本。
+- 自动生成 16 位随机安全令牌。
+- 自动创建并启动 `frps.service` (Systemd)。
  --help
 
 # 创建实例并安装 sing-box
