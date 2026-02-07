@@ -187,14 +187,16 @@ def main():
     final_outbounds = non_proxy_outbounds + new_clash_outbounds + remaining_sb_proxies
     
     all_proxy_tags = new_clash_tags + remaining_sb_tags
+    all_proxy_tags_set = set(all_proxy_tags)
     
     if not all_proxy_tags:
         print("Warning: No proxy nodes found.")
     else:
         # 创建自动选择组
+        group_tag = "Auto-Select-All"
         urltest_group = {
             "type": "urltest",
-            "tag": "Auto-Select-All",
+            "tag": group_tag,
             "outbounds": all_proxy_tags,
             "url": "http://www.gstatic.com/generate_204",
             "interval": "3m",
@@ -202,9 +204,24 @@ def main():
         }
         final_outbounds.append(urltest_group)
         
-        # 强制将 final 路由指向这个组（逻辑优化：如果存在 final 路由）
+        # 优化：全局替换单节点引用为代理组
+        print(f"[*] Optimizing proxy references (detour/outbound) to use group: {group_tag}")
+        
+        # 1. 替换 DNS detour
+        dns_config = sb_config.get('dns', {})
+        for server in dns_config.get('servers', []):
+            if server.get('detour') in all_proxy_tags_set:
+                server['detour'] = group_tag
+        
+        # 2. 替换 Route rules
+        route_config = sb_config.get('route', {})
+        for rule in route_config.get('rules', []):
+            if rule.get('outbound') in all_proxy_tags_set:
+                rule['outbound'] = group_tag
+        
+        # 3. 强制 final 路由指向这个组
         if "route" in sb_config:
-            sb_config["route"]["final"] = "Auto-Select-All"
+            sb_config["route"]["final"] = group_tag
 
     sb_config["outbounds"] = final_outbounds
 
@@ -212,7 +229,7 @@ def main():
         json.dump(sb_config, f, indent=2, ensure_ascii=False)
     
     print(f"[+] Successfully merged/replaced proxies.")
-    print(f"[+] Combined group 'Auto-Select-All' contains {len(all_proxy_tags)} nodes.")
+    print(f"[+] Target group '{group_tag}' contains {len(all_proxy_tags)} nodes.")
     print(f"[+] Saved to: {output_path}")
 
 if __name__ == "__main__":
