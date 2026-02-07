@@ -2,6 +2,7 @@ import json
 import yaml
 import sys
 import os
+import argparse
 
 # Sing-box 代理类型映射
 PROXY_TYPES = {
@@ -91,10 +92,15 @@ def convert_singbox_to_clash(outbound):
     return None
 
 def main():
-    sb_path = sys.argv[1] if len(sys.argv) > 1 else "/etc/sing-box/config.json"
-    output_path = sys.argv[2] if len(sys.argv) > 2 else "clash_config.yaml"
+    parser = argparse.ArgumentParser(description='Convert Sing-box configuration to Clash Verge format.')
+    parser.add_argument('-i', '--input', help='Path to Sing-box client config', default='/etc/sing-box/config.json')
+    parser.add_argument('-o', '--output', help='Path for the converted Clash YAML file', default='clash_config.yaml')
+    args = parser.parse_args()
+
+    sb_path = args.input
+    output_path = args.output
     
-    # 自动重定向测试路径
+    # 自动重定向测试路径 (保持原样)
     if not os.path.exists(sb_path) and os.path.exists("./singbox_client_config.json") and "etc" in sb_path:
         sb_path = "./singbox_client_config.json"
     elif not os.path.exists(sb_path) and os.path.exists("./config.json") and "etc" in sb_path:

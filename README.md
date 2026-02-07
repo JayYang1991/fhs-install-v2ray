@@ -318,10 +318,11 @@ export V2RAY_REVERSE_ID="your-reverse-id"
 
 #### 使用方法
 ```bash
-# 确保已安装 PyYAML 库
-# pip install PyYAML
+# 基本用法
+python3 merge_configs.py -s /etc/sing-box/config.json -c ~/.config/clash/config.yaml -o final_merged.json
 
-python3 merge_configs.py <singbox_json_path> <clash_yaml_path> <output_path>
+# 如果不指定参数，脚本会尝试寻找默认路径并在当前目录生成 merged_config.json
+python3 merge_configs.py
 ```
 
 #### 2. `sb_to_clash.py` (Sing-box -> Clash)
@@ -337,8 +338,8 @@ python3 merge_configs.py <singbox_json_path> <clash_yaml_path> <output_path>
 # 默认转换 (输入 /etc/sing-box/config.json, 输出当前目录 clash_config.yaml)
 python3 sb_to_clash.py
 
-# 自定义路径
-python3 sb_to_clash.py /path/to/singbox.json /path/to/output.yaml
+# 使用具体命名参数
+python3 sb_to_clash.py -i /path/to/singbox.json -o /path/to/output.yaml
 ```
 
 #### 示例

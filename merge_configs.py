@@ -1,7 +1,8 @@
+import os
+import sys
 import json
 import yaml
-import sys
-import os
+import argparse
 
 # 支持的代理类型
 PROXY_TYPES = {
@@ -100,20 +101,36 @@ def convert_clash_to_singbox(proxy):
     return None
 
 def main():
-    sb_path = sys.argv[1] if len(sys.argv) > 1 else "/etc/sing-box/config.json"
-    clash_path = sys.argv[2] if len(sys.argv) > 2 else os.path.expanduser("~/.local/share/io.github.clash-verge-rev.clash-verge-rev/clash-verge.yaml")
-    output_path = sys.argv[3] if len(sys.argv) > 3 else "optimized_singbox_config.json"
+    parser = argparse.ArgumentParser(description='Merge Clash proxies into Sing-box configuration.')
+    parser.add_argument('-s', '--singbox', help='Path to Sing-box client config', default='/etc/sing-box/config.json')
+    parser.add_argument('-c', '--clash', help='Path to Clash config (YAML)')
+    parser.add_argument('-o', '--output', help='Path for the merged output file', default='merged_config.json')
+    args = parser.parse_args()
+
+    sb_path = args.singbox
+    clash_path = args.clash
+    output_path = args.output
     
-    # 环境测试路径自动校准
-    if not os.path.exists(sb_path) and os.path.exists("./config.json") and sb_path == "/etc/sing-box/config.json":
-        sb_path = "./config.json"
-    if not os.path.exists(sb_path) and os.path.exists("./singbox_client_config.json") and sb_path == "/etc/sing-box/config.json":
+    # 自动定位默认路径逻辑 (保持原样)
+    if not os.path.exists(sb_path) and os.path.exists("./singbox_client_config.json") and "etc" in sb_path:
         sb_path = "./singbox_client_config.json"
     
-    if not os.path.exists(clash_path) and os.path.exists("./clash-verge.yaml"):
-        clash_path = "./clash-verge.yaml"
-    if not os.path.exists(clash_path) and os.path.exists(os.path.expanduser("~/clash-verge.yaml")):
-        clash_path = os.path.expanduser("~/clash-verge.yaml")
+    if not clash_path:
+        # 寻找 Clash Verge 默认配置文件路径
+        possible_clash_paths = [
+            os.path.expanduser("~/.config/clash/config.yaml"),
+            os.path.expanduser("~/.local/share/io.github.clash-verge-rev.clash-verge-rev/clash-verge.yaml"),
+            os.path.expanduser("~/.config/clash-verge/clash-verge.yaml"),
+            "./clash-verge.yaml"
+        ]
+        for p in possible_clash_paths:
+            if os.path.exists(p):
+                clash_path = p
+                break
+    
+    if not clash_path:
+        print("Error: Clash config path not specified and not found in common locations.")
+        sys.exit(1)
 
     if not os.path.exists(sb_path):
         print(f"Error: Sing-box config not found at {sb_path}")
