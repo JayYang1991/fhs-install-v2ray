@@ -163,7 +163,9 @@
         "127.0.0.0/8",
         "10.0.0.0/8",
         "172.16.0.0/12",
-        "192.168.0.0/16"
+        "192.168.0.0/16",
+        "207.148.109.122/32",
+        "155.94.241.65/32"
       ],
       "route_address": [
         "0.0.0.0/1",
@@ -179,56 +181,64 @@
         "type": "remote",
         "format": "binary",
         "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-google.srs",
-        "download_detour": "direct"
+        "download_detour": "direct",
+        "update_interval": "24h"
       },
       {
         "tag": "geosite-youtube",
         "type": "remote",
         "format": "binary",
         "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-youtube.srs",
-        "download_detour": "direct"
+        "download_detour": "direct",
+        "update_interval": "24h"
       },
       {
         "tag": "geosite-telegram",
         "type": "remote",
         "format": "binary",
         "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-telegram.srs",
-        "download_detour": "direct"
+        "download_detour": "direct",
+        "update_interval": "24h"
       },
       {
         "tag": "geosite-discord",
         "type": "remote",
         "format": "binary",
         "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-discord.srs",
-        "download_detour": "direct"
+        "download_detour": "direct",
+        "update_interval": "24h"
       },
       {
         "tag": "geoip-google",
         "type": "remote",
         "format": "binary",
         "url": "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@sing/geo/geoip/google.srs",
-        "download_detour": "direct"
+        "download_detour": "direct",
+        "update_interval": "24h"
       },
       {
         "tag": "geoip-telegram",
         "type": "remote",
         "format": "binary",
         "url": "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@sing/geo/geoip/telegram.srs",
-        "download_detour": "direct"
+        "download_detour": "direct",
+        "update_interval": "24h"
       },
       {
         "tag": "geosite-cn",
         "type": "remote",
         "format": "binary",
         "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-cn.srs",
-        "download_detour": "direct"
+        "download_detour": "direct",
+        "update_interval": "24h"
       },
       {
         "tag": "geoip-cn",
         "type": "remote",
         "format": "binary",
         "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geoip@rule-set/geoip-cn.srs",
-        "download_detour": "direct"
+        "download_detour": "direct",
+        "update_interval": "24h"
       }
     ],
     "rules": [
