@@ -132,7 +132,8 @@
           "enabled": true,
           "fingerprint": "chrome"
         }
-      }
+      },
+      "bind_interface" : "wlp4s0"
     }
   ],
   "inbounds": [
