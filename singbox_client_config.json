@@ -106,7 +106,7 @@
         "disable_cache": false
       }
     ],
-    "final": "dns-direct"
+    "final": "dns-proxy"
   },
   "outbounds": [
     {
@@ -146,7 +146,7 @@
     {
       "type": "mixed",
       "tag": "mixed-in",
-      "listen": "127.0.0.1",
+      "listen": "0.0.0.0",
       "listen_port": 4000,
       "udp_timeout": "5m"
     },
@@ -258,16 +258,12 @@
         "action": "hijack-dns"
       },
       {
-        "port": 53,
-        "action": "hijack-dns"
-      },
-      {
         "inbound": [
           "mixed-in",
           "tun-in"
         ],
         "action": "sniff",
-        "timeout": "300ms"
+        "timeout": "1000ms"
       },
       {
         "protocol": "dns",
@@ -281,6 +277,13 @@
           "geosite-discord",
           "geoip-google",
           "geoip-telegram"
+        ],
+        "action": "route",
+        "outbound": "sing-box-racknerd"
+      },
+      {
+        "domain": [
+          "example.com"
         ],
         "action": "route",
         "outbound": "sing-box-racknerd"
