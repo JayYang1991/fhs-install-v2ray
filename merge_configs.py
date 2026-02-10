@@ -11,6 +11,9 @@ PROXY_TYPES = {
     "shadowsocksr"
 }
 
+# Clash Verge 同步节点统一绑定网卡
+CLASH_OUTBOUND_BIND_INTERFACE = "wlp4s0"
+
 def convert_clash_to_singbox(proxy):
     name = proxy.get('name')
     ptype = proxy.get('type')
@@ -33,6 +36,8 @@ def convert_clash_to_singbox(proxy):
                 "type": proxy.get('obfs'),
                 "password": proxy.get('obfs-password')
             }
+        if CLASH_OUTBOUND_BIND_INTERFACE:
+            outbound["bind_interface"] = CLASH_OUTBOUND_BIND_INTERFACE
         return outbound
         
     elif ptype == 'vless':
@@ -72,10 +77,12 @@ def convert_clash_to_singbox(proxy):
                 "path": proxy.get('ws-opts', {}).get('path', '/'),
                 "headers": proxy.get('ws-opts', {}).get('headers', {})
             }
+        if CLASH_OUTBOUND_BIND_INTERFACE:
+            outbound["bind_interface"] = CLASH_OUTBOUND_BIND_INTERFACE
         return outbound
     
     elif ptype == 'shadowsocks':
-        return {
+        outbound = {
             "type": "shadowsocks",
             "tag": name,
             "server": proxy.get('server'),
@@ -83,9 +90,12 @@ def convert_clash_to_singbox(proxy):
             "method": proxy.get('cipher'),
             "password": proxy.get('password')
         }
+        if CLASH_OUTBOUND_BIND_INTERFACE:
+            outbound["bind_interface"] = CLASH_OUTBOUND_BIND_INTERFACE
+        return outbound
     
     elif ptype == 'trojan':
-        return {
+        outbound = {
             "type": "trojan",
             "tag": name,
             "server": proxy.get('server'),
@@ -97,6 +107,9 @@ def convert_clash_to_singbox(proxy):
                 "insecure": proxy.get('skip-cert-verify', False)
             }
         }
+        if CLASH_OUTBOUND_BIND_INTERFACE:
+            outbound["bind_interface"] = CLASH_OUTBOUND_BIND_INTERFACE
+        return outbound
 
     return None
 

@@ -7,7 +7,8 @@
     "enabled": true,
     "server": "ntp.aliyun.com",
     "server_port": 123,
-    "interval": "30m"
+    "interval": "30m",
+    "detour": "direct"
   },
   "dns": {
     "cache_capacity": 4096,
@@ -133,7 +134,7 @@
           "fingerprint": "chrome"
         }
       },
-      "bind_interface" : "wlp4s0"
+      "bind_interface": "wlp4s0"
     }
   ],
   "inbounds": [
