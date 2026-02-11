@@ -7,8 +7,7 @@
     "enabled": true,
     "server": "ntp.aliyun.com",
     "server_port": 123,
-    "interval": "30m",
-    "detour": "direct"
+    "interval": "30m"
   },
   "dns": {
     "cache_capacity": 4096,
@@ -36,13 +35,13 @@
         "type": "https",
         "server": "dns.alidns.com",
         "path": "/dns-query",
-        "domain_resolver": "dns-resolver"
+        "domain_resolver": "dns-resolver",
+        "detour": "direct"
       },
       {
         "tag": "dns-fakeip",
         "type": "fakeip",
-        "inet4_range": "198.18.0.0/15",
-        "inet6_range": "fc00::/18"
+        "inet4_range": "198.18.0.0/15"
       }
     ],
     "rules": [
@@ -112,7 +111,8 @@
   "outbounds": [
     {
       "type": "direct",
-      "tag": "direct"
+      "tag": "direct",
+      "bind_interface": "wlp4s0"
     },
     {
       "type": "vless",
@@ -166,8 +166,10 @@
         "10.0.0.0/8",
         "172.16.0.0/12",
         "192.168.0.0/16",
-        "207.148.109.122/32",
-        "155.94.241.65/32"
+        "8.8.8.8/32",
+        "1.1.1.1/32",
+        "223.5.5.5/32",
+        "119.29.29.29/32"
       ],
       "route_address": [
         "0.0.0.0/1",
@@ -245,18 +247,23 @@
     ],
     "rules": [
       {
+        "inbound": [
+          "dns-in"
+        ],
+        "action": "hijack-dns"
+      },
+      {
         "ip_cidr": [
-          "207.148.109.122/32",
-          "155.94.241.65/32"
+          "192.168.0.0/16"
         ],
         "action": "route",
         "outbound": "direct"
       },
       {
-        "inbound": [
-          "dns-in"
-        ],
-        "action": "hijack-dns"
+        "network": "udp",
+        "port": 123,
+        "action": "route",
+        "outbound": "direct"
       },
       {
         "inbound": [
@@ -306,7 +313,8 @@
     "final": "sing-box-racknerd",
     "auto_detect_interface": true,
     "default_domain_resolver": {
-      "server": "dns-proxy"
+      "server": "dns-direct",
+      "strategy": "ipv4_only"
     }
   },
   "experimental": {
