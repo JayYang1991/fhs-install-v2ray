@@ -23,7 +23,8 @@
           "enabled": true,
           "server_name": "cloudflare-dns.com"
         },
-        "detour": "sing-box-racknerd"
+        "detour": "sing-box-racknerd",
+        "connect_timeout": "20s"
       },
       {
         "tag": "dns-fakeip",
