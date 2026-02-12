@@ -3,20 +3,15 @@
     "level": "warning",
     "timestamp": true
   },
-  "ntp": {
-    "enabled": true,
-    "server": "ntp.aliyun.com",
-    "server_port": 123,
-    "interval": "30m"
-  },
   "dns": {
     "cache_capacity": 4096,
     "strategy": "ipv4_only",
     "servers": [
       {
-        "tag": "dns-resolver",
+        "tag": "dns-direct",
         "type": "udp",
-        "server": "223.5.5.5"
+        "server": "223.5.5.5",
+        "detour": "direct"
       },
       {
         "tag": "dns-proxy",
@@ -31,30 +26,12 @@
         "detour": "sing-box-racknerd"
       },
       {
-        "tag": "dns-direct",
-        "type": "https",
-        "server": "dns.alidns.com",
-        "path": "/dns-query",
-        "domain_resolver": "dns-resolver",
-        "detour": "direct"
-      },
-      {
         "tag": "dns-fakeip",
         "type": "fakeip",
         "inet4_range": "198.18.0.0/15"
       }
     ],
     "rules": [
-      {
-        "rule_set": [
-          "geosite-google",
-          "geosite-youtube",
-          "geosite-telegram",
-          "geosite-discord"
-        ],
-        "action": "route",
-        "server": "dns-proxy"
-      },
       {
         "rule_set": [
           "geosite-cn"
@@ -81,21 +58,6 @@
         ],
         "action": "route",
         "server": "dns-direct"
-      },
-      {
-        "domain_keyword": [
-          "msftconnecttest.com",
-          "msftncsi.com"
-        ],
-        "action": "route",
-        "server": "dns-proxy"
-      },
-      {
-        "domain_keyword": [
-          "googleapis"
-        ],
-        "action": "route",
-        "server": "dns-proxy"
       },
       {
         "query_type": [
@@ -134,7 +96,8 @@
           "fingerprint": "chrome"
         }
       },
-      "bind_interface": "wlp4s0"
+      "bind_interface": "wlp4s0",
+      "connect_timeout": "20s"
     }
   ],
   "inbounds": [
@@ -253,8 +216,12 @@
         "action": "hijack-dns"
       },
       {
+        "protocol": "dns",
+        "action": "hijack-dns"
+      },
+      {
         "ip_cidr": [
-          "192.168.0.0/16"
+          "207.148.109.122/32",
         ],
         "action": "route",
         "outbound": "direct"
@@ -274,29 +241,6 @@
         "timeout": "1000ms"
       },
       {
-        "protocol": "dns",
-        "action": "hijack-dns"
-      },
-      {
-        "rule_set": [
-          "geosite-google",
-          "geosite-youtube",
-          "geosite-telegram",
-          "geosite-discord",
-          "geoip-google",
-          "geoip-telegram"
-        ],
-        "action": "route",
-        "outbound": "sing-box-racknerd"
-      },
-      {
-        "domain": [
-          "example.com"
-        ],
-        "action": "route",
-        "outbound": "sing-box-racknerd"
-      },
-      {
         "rule_set": [
           "geoip-cn",
           "geosite-cn"
@@ -313,7 +257,7 @@
     "final": "sing-box-racknerd",
     "auto_detect_interface": true,
     "default_domain_resolver": {
-      "server": "dns-direct",
+      "server": "dns-proxy",
       "strategy": "ipv4_only"
     }
   },
