@@ -24,7 +24,7 @@
           "enabled": true,
           "server_name": "cloudflare-dns.com"
         },
-        "detour": "sing-box-racknerd",
+        "detour": "racknerd",
         "connect_timeout": "30s"
       },
       {
@@ -37,7 +37,7 @@
           "enabled": true,
           "server_name": "dns.google"
         },
-        "detour": "sing-box-racknerd",
+        "detour": "racknerd",
         "connect_timeout": "30s"
       }
     ],
@@ -76,12 +76,11 @@
     {
       "type": "direct",
       "tag": "direct",
-      "bind_interface": "wlp4s0",
       "connect_timeout": "30s"
     },
     {
       "type": "vless",
-      "tag": "sing-box-racknerd",
+      "tag": "racknerd-back",
       "server": "{SINGBOX_SERVER_IP}",
       "server_port": "{SINGBOX_PORT}",
       "flow": "xtls-rprx-vision",
@@ -99,8 +98,25 @@
           "fingerprint": "chrome"
         }
       },
-      "bind_interface": "wlp4s0",
-      "connect_timeout": "30s"
+      "connect_timeout": "30s",
+      "multiplex": {
+        "enabled": false
+      }
+    },
+    {
+      "type": "hysteria2",
+      "tag": "racknerd",
+      "server": "{SINGBOX_SERVER_IP}",
+      "server_port": 123,
+      "password": "af5317c8f52b509777b111ed04d20579",
+      "tls": {
+        "enabled": true,
+        "insecure": true,
+        "server_name": "hy2.jayyang.cn",
+        "alpn": [
+          "h3"
+        ]
+      }
     }
   ],
   "inbounds": [
@@ -114,7 +130,7 @@
       "type": "mixed",
       "tag": "mixed-in",
       "listen": "0.0.0.0",
-      "listen_port": 4000,
+      "listen_port": 4001,
       "udp_timeout": "5m"
     },
     {
@@ -131,7 +147,9 @@
         "127.0.0.0/8",
         "10.0.0.0/8",
         "172.16.0.0/12",
-        "192.168.0.0/16"
+        "192.168.0.0/16",
+        "{SINGBOX_SERVER_IP}/32",
+        "8.137.160.254/32"
       ],
       "route_address": [
         "0.0.0.0/1",
@@ -147,7 +165,7 @@
         "type": "remote",
         "format": "binary",
         "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-google.srs",
-        "download_detour": "sing-box-racknerd",
+        "download_detour": "racknerd",
         "update_interval": "24h"
       },
       {
@@ -155,7 +173,7 @@
         "type": "remote",
         "format": "binary",
         "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-youtube.srs",
-        "download_detour": "sing-box-racknerd",
+        "download_detour": "racknerd",
         "update_interval": "24h"
       },
       {
@@ -163,7 +181,7 @@
         "type": "remote",
         "format": "binary",
         "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-telegram.srs",
-        "download_detour": "sing-box-racknerd",
+        "download_detour": "racknerd",
         "update_interval": "24h"
       },
       {
@@ -171,7 +189,7 @@
         "type": "remote",
         "format": "binary",
         "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-discord.srs",
-        "download_detour": "sing-box-racknerd",
+        "download_detour": "racknerd",
         "update_interval": "24h"
       },
       {
@@ -179,7 +197,7 @@
         "type": "remote",
         "format": "binary",
         "url": "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@sing/geo/geoip/google.srs",
-        "download_detour": "sing-box-racknerd",
+        "download_detour": "racknerd",
         "update_interval": "24h"
       },
       {
@@ -187,7 +205,7 @@
         "type": "remote",
         "format": "binary",
         "url": "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@sing/geo/geoip/telegram.srs",
-        "download_detour": "sing-box-racknerd",
+        "download_detour": "racknerd",
         "update_interval": "24h"
       },
       {
@@ -195,7 +213,7 @@
         "type": "remote",
         "format": "binary",
         "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-cn.srs",
-        "download_detour": "sing-box-racknerd",
+        "download_detour": "racknerd",
         "update_interval": "24h"
       },
       {
@@ -203,7 +221,7 @@
         "type": "remote",
         "format": "binary",
         "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geoip@rule-set/geoip-cn.srs",
-        "download_detour": "sing-box-racknerd",
+        "download_detour": "racknerd",
         "update_interval": "24h"
       }
     ],
@@ -235,7 +253,9 @@
       },
       {
         "ip_cidr": [
-          "207.148.109.122/32"
+          "207.148.109.122/32",
+          "{SINGBOX_SERVER_IP}/32",
+          "8.137.160.254/32"
         ],
         "action": "route",
         "outbound": "direct"
@@ -254,7 +274,7 @@
         "outbound": "direct"
       }
     ],
-    "final": "sing-box-racknerd",
+    "final": "racknerd",
     "auto_detect_interface": true,
     "default_domain_resolver": {
       "server": "dns-proxy",
