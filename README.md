@@ -34,8 +34,8 @@ installed: /etc/systemd/system/v2ray@.service
 
 - `proxy_server_config.json` / `proxy_client_config.json`：V2Ray 代理模板（gRPC 传输）。
 - `reverse_server_config.json`：V2Ray 反向代理服务端模板。
-- `singbox_server_config.json`：sing-box Reality 服务端模板（VLESS + Reality）。
-- `singbox_client_config.json`：sing-box 客户端模板（TUN 模式，局域网与中国地址直连，其余走代理）。
+- `singbox_server_config.json`：sing-box 服务端模板（VLESS + Reality + Hysteria2）。
+- `singbox_client_config.json`：sing-box 客户端模板（VLESS + Hysteria2 双出站，TUN 模式，局域网与中国地址直连，其余走代理）。
 
 sing-box 模板占位符以 `SINGBOX_*` 命名，例如 `{SINGBOX_SERVER_IP}`、`{SINGBOX_UUID}`。
 
@@ -62,7 +62,7 @@ V2Ray 安装**不会自动生成配置文件**；sing-box 安装脚本会基于�
 
 ### install-singbox-server.sh - sing-box Reality 服务器安装脚本
 
-`install-singbox-server.sh` 用于在 Linux 服务器上快速部署基于 VLESS + Reality + Vision 协议的 sing-box 服务器。
+`install-singbox-server.sh` 用于在 Linux 服务器上快速部署基于 VLESS + Reality + Vision + Hysteria2 协议的 sing-box 服务器。
 
 #### 基本用法
 
@@ -73,7 +73,7 @@ bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/m
 
 安装完成后会在服务端生成：
 - `/etc/sing-box/config.json`
-- `/etc/sing-box/client_config.json`（客户端配置，脚本会输出该路径）
+- 客户端配置临时文件（位于 `/tmp/singbox_client_config.*.json`，脚本会输出该路径）
 
 #### 参数说明
 
@@ -87,6 +87,12 @@ bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/m
 | `--uuid` | `SINGBOX_UUID` | 用户 UUID | 自动生成 |
 | `--short-id` | `SINGBOX_SHORT_ID` | Reality Short ID | 自动生成 |
 | `--log-level` | `SINGBOX_LOG_LEVEL` | 日志级别 | info |
+| `--hy2-port` | `SINGBOX_HY2_PORT` | Hysteria2 监听端口（UDP） | 123 |
+| `--hy2-domain` | `SINGBOX_HY2_DOMAIN` | Hysteria2 TLS 域名 | hy2.jayyang.cn |
+| `--hy2-password` | `SINGBOX_HY2_PASSWORD` | Hysteria2 用户密码 | 自动生成 |
+| `--hy2-up-mbps` | `SINGBOX_HY2_UP_MBPS` | Hysteria2 上行带宽（Mbps） | 200 |
+| `--hy2-down-mbps` | `SINGBOX_HY2_DOWN_MBPS` | Hysteria2 下行带宽（Mbps） | 200 |
+| `--hy2-masquerade` | `SINGBOX_HY2_MASQUERADE` | Hysteria2 伪装地址 | https://www.cloudflare.com |
 
 #### 示例
 
@@ -99,8 +105,9 @@ bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/m
 
 1. **全自动部署**：自动安装架构匹配的 sing-box 与依赖。
 2. **Reality 安全保障**：自动生成密钥对并配置 Reality 隧道。
-3. **防火墙自动配置**：支持 `ufw` 和 `firewalld` 自动放行端口。
-4. **配置生成**：在线下载模板并生成 `/etc/sing-box/config.json` 与 `/etc/sing-box/client_config.json`，并输出客户端配置路径。
+3. **防火墙自动配置**：支持 `ufw` 和 `firewalld` 自动放行 `TCP/$SINGBOX_PORT` 与 `UDP/$SINGBOX_HY2_PORT`。
+4. **配置生成**：在线下载模板并生成 `/etc/sing-box/config.json`，同时输出客户端配置路径。
+5. **证书自动处理**：Hysteria2 证书固定使用 `/etc/cert/hy2_cert.pem` 与 `/etc/cert/hy2_key.pem`，不存在时自动生成自签名证书。
 
 ### 统一安装脚本
 
@@ -278,6 +285,14 @@ bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/m
 - `SINGBOX_UUID`: sing-box 用户 UUID
 - `SINGBOX_SHORT_ID`: sing-box Reality Short ID
 - `SINGBOX_LOG_LEVEL`: sing-box 日志级别
+- `SINGBOX_HY2_PORT`: Hysteria2 监听端口（默认：123）
+- `SINGBOX_HY2_DOMAIN`: Hysteria2 TLS 域名（默认：hy2.jayyang.cn）
+- `SINGBOX_HY2_PASSWORD`: Hysteria2 用户密码（默认：自动生成）
+- `SINGBOX_HY2_UP_MBPS`: Hysteria2 上行带宽 Mbps（默认：200）
+- `SINGBOX_HY2_DOWN_MBPS`: Hysteria2 下行带宽 Mbps（默认：200）
+- `SINGBOX_HY2_MASQUERADE`: Hysteria2 伪装地址（默认：https://www.cloudflare.com）
+- `SINGBOX_HY2_CERT_PATH`: Hysteria2 证书路径（固定：`/etc/cert/hy2_cert.pem`）
+- `SINGBOX_HY2_KEY_PATH`: Hysteria2 私钥路径（固定：`/etc/cert/hy2_key.pem`）
 
 ### 删除实例
 
@@ -391,8 +406,8 @@ python3 merge_configs.py /etc/sing-box/config.json ~/.local/share/io.github.clas
 | `proxy_server_config.json` | V2Ray 代理服务端配置 |
 | `proxy_client_config.json` | V2Ray 代理客户端配置 |
 | `reverse_server_config.json` | V2Ray 反向代理服务端配置 |
-| `singbox_server_config.json` | sing-box Reality 服务端模板 |
-| `singbox_client_config.json` | sing-box 客户端模板 |
+| `singbox_server_config.json` | sing-box 服务端模板（VLESS + Reality + Hysteria2） |
+| `singbox_client_config.json` | sing-box 客户端模板（VLESS + Hysteria2） |
 
 **使用方法（V2Ray）**：
 1. 下载对应的配置文件模板
@@ -402,7 +417,7 @@ python3 merge_configs.py /etc/sing-box/config.json ~/.local/share/io.github.clas
 
 **使用方法（sing-box）**：
 1. 直接运行 `install-singbox-server.sh`，脚本会在线下载模板并生成 `/etc/sing-box/config.json`
-2. 客户端模板生成后的文件为 `/etc/sing-box/client_config.json`
+2. 客户端模板会生成到 `/tmp/singbox_client_config.*.json` 并在安装结束时输出路径
 
 ## 常用命令
 

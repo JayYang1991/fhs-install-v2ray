@@ -10,6 +10,12 @@
 #   SINGBOX_UUID      - Client UUID (default: auto-generated)
 #   SINGBOX_SHORT_ID  - Reality short ID (default: auto-generated)
 #   SINGBOX_LOG_LEVEL - Log level (default: info)
+#   SINGBOX_HY2_PORT       - Hysteria2 listen port (default: 123)
+#   SINGBOX_HY2_DOMAIN     - Hysteria2 TLS server name (default: hy2.jayyang.cn)
+#   SINGBOX_HY2_PASSWORD   - Hysteria2 password (default: auto-generated)
+#   SINGBOX_HY2_UP_MBPS    - Hysteria2 uplink Mbps (default: 200)
+#   SINGBOX_HY2_DOWN_MBPS  - Hysteria2 downlink Mbps (default: 200)
+#   SINGBOX_HY2_MASQUERADE - Hysteria2 masquerade URL (default: https://www.cloudflare.com)
 #
 # ===================== Default Parameters =====================
 SINGBOX_PORT=${SINGBOX_PORT:-${PORT:-443}}
@@ -17,6 +23,14 @@ SINGBOX_DOMAIN=${SINGBOX_DOMAIN:-${DOMAIN:-www.cloudflare.com}}
 SINGBOX_UUID=${SINGBOX_UUID:-${UUID:-auto}}
 SINGBOX_SHORT_ID=${SINGBOX_SHORT_ID:-${SHORT_ID:-auto}}
 SINGBOX_LOG_LEVEL=${SINGBOX_LOG_LEVEL:-${LOG_LEVEL:-info}}
+SINGBOX_HY2_PORT=${SINGBOX_HY2_PORT:-${HY2_PORT:-123}}
+SINGBOX_HY2_DOMAIN=${SINGBOX_HY2_DOMAIN:-${HY2_DOMAIN:-hy2.jayyang.cn}}
+SINGBOX_HY2_PASSWORD=${SINGBOX_HY2_PASSWORD:-${HY2_PASSWORD:-auto}}
+SINGBOX_HY2_UP_MBPS=${SINGBOX_HY2_UP_MBPS:-${HY2_UP_MBPS:-200}}
+SINGBOX_HY2_DOWN_MBPS=${SINGBOX_HY2_DOWN_MBPS:-${HY2_DOWN_MBPS:-200}}
+SINGBOX_HY2_MASQUERADE=${SINGBOX_HY2_MASQUERADE:-${HY2_MASQUERADE:-https://www.cloudflare.com}}
+SINGBOX_HY2_CERT_PATH="/etc/cert/hy2_cert.pem"
+SINGBOX_HY2_KEY_PATH="/etc/cert/hy2_key.pem"
 FORCE_INSTALL=false
 
 # ===================== Color Output =====================
@@ -178,6 +192,67 @@ generate_keys() {
       exit 1
     fi
   fi
+
+  if [[ "$HY2_PASSWORD" == "auto" ]]; then
+    HY2_PASSWORD=$(openssl rand -hex 16)
+    if [[ -z "$HY2_PASSWORD" ]]; then
+      echo "${red}error: 生成 Hysteria2 密码失败${reset}"
+      exit 1
+    fi
+  fi
+}
+
+validate_runtime_parameters() {
+  if ! [[ "$PORT" =~ ^[0-9]+$ ]] || ((PORT < 1)) || ((PORT > 65535)); then
+    echo "${red}error: 端口无效: $PORT${reset}"
+    exit 1
+  fi
+
+  if ! [[ "$HY2_PORT" =~ ^[0-9]+$ ]] || ((HY2_PORT < 1)) || ((HY2_PORT > 65535)); then
+    echo "${red}error: HY2 端口无效: $HY2_PORT${reset}"
+    exit 1
+  fi
+
+  if ! [[ "$HY2_UP_MBPS" =~ ^[0-9]+$ ]] || ((HY2_UP_MBPS < 1)); then
+    echo "${red}error: HY2_UP_MBPS 无效: $HY2_UP_MBPS${reset}"
+    exit 1
+  fi
+
+  if ! [[ "$HY2_DOWN_MBPS" =~ ^[0-9]+$ ]] || ((HY2_DOWN_MBPS < 1)); then
+    echo "${red}error: HY2_DOWN_MBPS 无效: $HY2_DOWN_MBPS${reset}"
+    exit 1
+  fi
+}
+
+ensure_hy2_certificates() {
+  local cert_dir="/etc/cert"
+  local cert_path="$SINGBOX_HY2_CERT_PATH"
+  local key_path="$SINGBOX_HY2_KEY_PATH"
+
+  if ! mkdir -p "$cert_dir"; then
+    echo "${red}error: 创建证书目录失败: $cert_dir${reset}"
+    exit 1
+  fi
+
+  if [[ -f "$cert_path" ]] && [[ -f "$key_path" ]]; then
+    echo "${green}info: 已检测到 Hysteria2 证书: $cert_path${reset}"
+    return
+  fi
+
+  echo "${aoi}info: 正在生成 Hysteria2 自签名证书...${reset}"
+  if ! openssl req -x509 -newkey rsa:2048 -sha256 -nodes \
+    -days 3650 \
+    -subj "/CN=${HY2_DOMAIN}" \
+    -addext "subjectAltName=DNS:${HY2_DOMAIN}" \
+    -keyout "$key_path" \
+    -out "$cert_path" > /dev/null 2>&1; then
+    echo "${red}error: 生成 Hysteria2 证书失败${reset}"
+    exit 1
+  fi
+
+  chmod 600 "$key_path" || true
+  chmod 644 "$cert_path" || true
+  echo "${green}info: Hysteria2 证书已生成: $cert_path${reset}"
 }
 
 write_config() {
@@ -216,6 +291,17 @@ write_config() {
     -e "s|{SINGBOX_DOMAIN}|$(escape_sed_replacement "${DOMAIN}")|g" \
     -e "s|{SINGBOX_PRIVATE_KEY}|$(escape_sed_replacement "${PRIVATE_KEY}")|g" \
     -e "s|{SINGBOX_SHORT_ID}|$(escape_sed_replacement "${SHORT_ID}")|g" \
+    -e "s|\"{SINGBOX_HY2_PORT}\"|${HY2_PORT}|g" \
+    -e "s|{SINGBOX_HY2_PORT}|${HY2_PORT}|g" \
+    -e "s|\"up_mbps\"[[:space:]]*:[[:space:]]*\"{SINGBOX_HY2_UP_MBPS}\"|\"up_mbps\": ${HY2_UP_MBPS}|g" \
+    -e "s|\"down_mbps\"[[:space:]]*:[[:space:]]*\"{SINGBOX_HY2_DOWN_MBPS}\"|\"down_mbps\": ${HY2_DOWN_MBPS}|g" \
+    -e "s|{SINGBOX_HY2_PASSWORD}|$(escape_sed_replacement "${HY2_PASSWORD}")|g" \
+    -e "s|{SINGBOX_HY2_UP_MBPS}|${HY2_UP_MBPS}|g" \
+    -e "s|{SINGBOX_HY2_DOWN_MBPS}|${HY2_DOWN_MBPS}|g" \
+    -e "s|{SINGBOX_HY2_DOMAIN}|$(escape_sed_replacement "${HY2_DOMAIN}")|g" \
+    -e "s|{SINGBOX_HY2_CERT_PATH}|$(escape_sed_replacement "${SINGBOX_HY2_CERT_PATH}")|g" \
+    -e "s|{SINGBOX_HY2_KEY_PATH}|$(escape_sed_replacement "${SINGBOX_HY2_KEY_PATH}")|g" \
+    -e "s|{SINGBOX_HY2_MASQUERADE}|$(escape_sed_replacement "${HY2_MASQUERADE}")|g" \
     "$server_template" > "$server_config_path"; then
     echo "${red}error: 写入配置文件失败${reset}"
     exit 1
@@ -257,8 +343,10 @@ configure_firewall() {
 
   if command -v ufw > /dev/null 2>&1; then
     ufw allow "${PORT}/tcp" || true
+    ufw allow "${HY2_PORT}/udp" || true
   elif command -v firewall-cmd > /dev/null 2>&1; then
     firewall-cmd --permanent --add-port="${PORT}/tcp" || true
+    firewall-cmd --permanent --add-port="${HY2_PORT}/udp" || true
     firewall-cmd --reload || true
   fi
 }
@@ -339,6 +427,30 @@ while [[ $# -gt 0 ]]; do
       SINGBOX_LOG_LEVEL="$2"
       shift 2
       ;;
+    --hy2-port)
+      SINGBOX_HY2_PORT="$2"
+      shift 2
+      ;;
+    --hy2-domain)
+      SINGBOX_HY2_DOMAIN="$2"
+      shift 2
+      ;;
+    --hy2-password)
+      SINGBOX_HY2_PASSWORD="$2"
+      shift 2
+      ;;
+    --hy2-up-mbps)
+      SINGBOX_HY2_UP_MBPS="$2"
+      shift 2
+      ;;
+    --hy2-down-mbps)
+      SINGBOX_HY2_DOWN_MBPS="$2"
+      shift 2
+      ;;
+    --hy2-masquerade)
+      SINGBOX_HY2_MASQUERADE="$2"
+      shift 2
+      ;;
     -f|--force)
       FORCE_INSTALL=true
       shift
@@ -357,14 +469,23 @@ main() {
   UUID="$SINGBOX_UUID"
   SHORT_ID="$SINGBOX_SHORT_ID"
   LOG_LEVEL="$SINGBOX_LOG_LEVEL"
+  HY2_PORT="$SINGBOX_HY2_PORT"
+  HY2_DOMAIN="$SINGBOX_HY2_DOMAIN"
+  HY2_PASSWORD="$SINGBOX_HY2_PASSWORD"
+  HY2_UP_MBPS="$SINGBOX_HY2_UP_MBPS"
+  HY2_DOWN_MBPS="$SINGBOX_HY2_DOWN_MBPS"
+  HY2_MASQUERADE="$SINGBOX_HY2_MASQUERADE"
 
   trap cleanup_temp EXIT
 
   echo "${aoi}▶ sing-box Server 自动安装开始${reset}"
   echo "端口: $PORT"
   echo "SNI: $DOMAIN"
+  echo "HY2 端口: $HY2_PORT"
+  echo "HY2 域名: $HY2_DOMAIN"
   echo ""
 
+  validate_runtime_parameters
   check_if_running_as_root
   identify_the_operating_system_and_architecture
 
@@ -385,6 +506,7 @@ main() {
   install_singbox
   download_templates
   generate_keys
+  ensure_hy2_certificates
   write_config
   configure_firewall
   start_service
