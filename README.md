@@ -109,6 +109,65 @@ bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/m
 4. **配置生成**：在线下载模板并生成 `/etc/sing-box/config.json`，同时输出客户端配置路径。
 5. **证书自动处理**：Hysteria2 证书固定使用 `/etc/cert/hy2_cert.pem` 与 `/etc/cert/hy2_key.pem`，不存在时自动生成自签名证书。
 
+### sing-box 链路监控与自动切换
+
+仓库内提供了 sing-box 监控脚本与 systemd 服务文件：
+
+- `monitor-singbox-failover.sh`：定时检测指定网站连通性，连续超时后调用 sing-box API 切换 selector 对应链路。
+- `monitor-singbox-failover.service`：将监控脚本作为 systemd 常驻服务运行（支持开机自启）。
+
+#### 监控脚本使用
+
+```bash
+bash monitor-singbox-failover.sh \
+  --url https://www.gstatic.com/generate_204 \
+  --api http://127.0.0.1:9090 \
+  --interval 15 \
+  --timeout 8 \
+  --threshold 2 \
+  --proxy http://127.0.0.1:7890
+```
+
+参数说明：
+
+- `--url`：连通性检测地址（建议使用返回快速且稳定的 URL）。
+- `--api`：sing-box external controller 地址（Clash API 兼容）。
+- `--selector`：可选，指定要切换的 selector 名称（默认自动发现，优先 `PROXY`）。
+- `--chains`：可选，指定候选链路名称列表（逗号分隔）。默认自动读取 selector 的 `all` 列表。
+- `--interval`：检测间隔（秒）。
+- `--timeout`：单次检测超时时间（秒）。
+- `--threshold`：连续超时次数阈值，达到后执行一次切换。
+- `--proxy`：可选，检测请求使用的本地代理（如 `http://127.0.0.1:7890`）。
+
+查询当前 sing-box 中的代理组及组内代理：
+
+```bash
+bash monitor-singbox-failover.sh --list-groups --api http://127.0.0.1:9090
+```
+
+#### systemd 部署
+
+```bash
+sudo cp monitor-singbox-failover.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now monitor-singbox-failover.service
+```
+
+查看运行状态与日志：
+
+```bash
+sudo systemctl status monitor-singbox-failover.service
+sudo journalctl -u monitor-singbox-failover.service -f
+sudo tail -f /var/log/singbox-failover.log
+```
+
+如需修改链路或参数，编辑 `/etc/systemd/system/monitor-singbox-failover.service` 的 `ExecStart`，然后重载并重启服务：
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart monitor-singbox-failover.service
+```
+
 ### 统一安装脚本
 
 V2Ray 相关安装统一由 `install-v2ray.sh` 处理，通过 `--mode` 参数选择不同的安装模式（`proxy-server` / `proxy-client` / `reverse-server` / `update-dat` / `--remove`）。
