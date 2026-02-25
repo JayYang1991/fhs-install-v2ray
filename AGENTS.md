@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This repository contains bash scripts for installing V2Ray on Linux systems following FHS standards.
+This repository contains bash scripts for installing V2Ray and managing sing-box proxy workflows on Linux systems following FHS standards.
 
 ## Build/Lint/Test Commands
 
@@ -11,6 +11,10 @@ shellcheck install-*.sh
 
 # Format with shfmt (uses -i 2 -ci -sr options)
 shfmt -i 2 -ci -sr -w install-*.sh
+
+# Lint switcher script explicitly
+shellcheck switch-singbox-proxy.sh
+shfmt -i 2 -ci -sr -w switch-singbox-proxy.sh
 ```
 
 ### Testing
@@ -24,6 +28,10 @@ sudo bash install-dat-release.sh
 sudo bash install-v2ray-proxy-server.sh
 sudo bash install-v2ray-proxy-client.sh
 sudo bash install-v2ray-reverse-server.sh
+
+# Sing-box proxy switch check
+bash switch-singbox-proxy.sh --show
+bash switch-singbox-proxy.sh --best
 
 # Note: There are no unit tests. Testing is done by running scripts directly.
 # Tests are run in CI via .github/workflows/sh-checker.yml on Ubuntu, Rocky Linux, and Arch Linux.
@@ -138,6 +146,9 @@ Override via environment: `DAT_PATH` (/usr/local/share/v2ray), `JSON_PATH` (/usr
 ### Client-Specific Variables
 Set before running proxy/reverse scripts: `V2RAY_PROXY_SERVER_IP`, `V2RAY_PROXY_ID`, `V2RAY_REVERSE_SERVER_IP`, `V2RAY_REVERSE_ID`
 
+### Sing-box Switch Variables
+Optional for `switch-singbox-proxy.sh`: `TEST_URL` (probe URL, default `https://www.gstatic.com/generate_204`), `TEST_TIMEOUT_MS` (probe timeout in milliseconds, default `5000`)
+
 ## Repository Structure
 
 - `install-release.sh`: Main V2Ray installation (649 lines)
@@ -145,8 +156,16 @@ Set before running proxy/reverse scripts: `V2RAY_PROXY_SERVER_IP`, `V2RAY_PROXY_
 - `install-v2ray-proxy-client.sh`: Proxy client installation
 - `install-v2ray-reverse-server.sh`: Reverse server installation
 - `install-dat-release.sh`: Dat file update script (83 lines)
+- `switch-singbox-proxy.sh`: sing-box group switch tool (supports lowest-latency auto-select)
 - `.github/workflows/sh-checker.yml`: CI configuration
 - `*_config.json`: Example configurations
+
+## Sing-box Proxy Switching Pattern
+
+- Default action of `switch-singbox-proxy.sh` is `--best` (auto-select lowest-latency node in a group)
+- `--next` keeps round-robin switching behavior
+- Delay probing uses Clash API endpoint: `GET /proxies/{name}/delay?url=<url>&timeout=<ms>`
+- Manual pinning is supported with `--set <node_name>`
 
 ## Service Management Pattern
 
@@ -160,8 +179,8 @@ systemctl stop "$v2ray_daemon_to_stop"
 ## Development Workflow
 
 1. Make changes to scripts
-2. Run linting: `shellcheck install-*.sh && shfmt -i 2 -ci -sr -w install-*.sh`
-3. Test changes: `sudo bash install-release.sh --check`
+2. Run linting: `shellcheck install-*.sh switch-singbox-proxy.sh && shfmt -i 2 -ci -sr -w install-*.sh switch-singbox-proxy.sh`
+3. Test changes: `sudo bash install-release.sh --check` and `bash switch-singbox-proxy.sh --show`
 4. Commit changes with descriptive messages
 5. Push to repository
 
