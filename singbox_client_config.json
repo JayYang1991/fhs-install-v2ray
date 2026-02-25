@@ -4,18 +4,23 @@
     "timestamp": true
   },
   "dns": {
-    "cache_capacity": 4096,
     "strategy": "ipv4_only",
+    "cache_capacity": 4096,
+    "reverse_mapping": true,
     "servers": [
       {
         "tag": "dns-direct",
         "type": "udp",
         "server": "223.5.5.5",
-        "detour": "direct",
-        "connect_timeout": "30s"
+        "detour": "direct"
       },
       {
-        "tag": "dns-proxy-backup",
+        "tag": "dns-fakeip",
+        "type": "fakeip",
+        "inet4_range": "198.18.0.0/15"
+      },
+      {
+        "tag": "dns-doh-cloudflare-tcp",
         "type": "https",
         "server": "1.1.1.1",
         "server_port": 443,
@@ -24,24 +29,31 @@
           "enabled": true,
           "server_name": "cloudflare-dns.com"
         },
-        "detour": "racknerd",
-        "connect_timeout": "30s"
+        "detour": "auto-selector-tcp"
       },
       {
-        "tag": "dns-proxy",
+        "tag": "dns-doh-cloudflare-udp",
         "type": "https",
-        "server": "8.8.8.8",
+        "server": "1.1.1.1",
         "server_port": 443,
         "path": "/dns-query",
         "tls": {
           "enabled": true,
-          "server_name": "dns.google"
+          "server_name": "cloudflare-dns.com"
         },
-        "detour": "racknerd",
-        "connect_timeout": "30s"
+        "detour": "auto-selector-udp"
       }
     ],
     "rules": [
+      {
+        "domain": [
+          "localhost.ptlogin2.qq.com",
+          "www.msftconnecttest.com",
+          "connectivity-check.ubuntu.com"
+        ],
+        "action": "route",
+        "server": "dns-direct"
+      },
       {
         "rule_set": [
           "geosite-cn"
@@ -50,39 +62,34 @@
         "server": "dns-direct"
       },
       {
-        "domain": [
-          "localhost.ptlogin2.qq.com",
-          "www.msftconnecttest.com"
-        ],
-        "domain_suffix": [
-          ".lan",
-          ".local",
-          ".arpa",
-          "ntp.aliyun.com",
-          ".market.xiaomi.com",
-          ".msftncsi.com"
-        ],
-        "domain_regex": [
-          "^time\\..*\\.com$",
-          "^ntp\\..*\\.com$"
+        "query_type": [
+          "A"
         ],
         "action": "route",
-        "server": "dns-direct"
+        "server": "dns-fakeip"
+      },
+      {
+        "rule_set": [
+          "geosite-youtube"
+        ],
+        "action": "route",
+        "server": "dns-doh-cloudflare-udp"
       }
     ],
-    "final": "dns-proxy"
+    "final": "dns-doh-cloudflare-tcp"
   },
   "outbounds": [
     {
       "type": "direct",
       "tag": "direct",
-      "connect_timeout": "30s"
+      "connect_timeout": "30s",
+      "bind_interface": "enp2s0"
     },
     {
       "type": "vless",
-      "tag": "racknerd-back",
+      "tag": "racknerd-tcp-8443",
       "server": "{SINGBOX_SERVER_IP}",
-      "server_port": "{SINGBOX_PORT}",
+      "server_port": 8443,
       "flow": "xtls-rprx-vision",
       "uuid": "{SINGBOX_UUID}",
       "tls": {
@@ -101,14 +108,173 @@
       "connect_timeout": "30s",
       "multiplex": {
         "enabled": false
-      }
+      },
+      "bind_interface": "enp2s0"
+    },
+    {
+      "type": "vless",
+      "tag": "racknerd-tcp-443",
+      "server": "{SINGBOX_SERVER_IP}",
+      "server_port": 443,
+      "flow": "xtls-rprx-vision",
+      "uuid": "{SINGBOX_UUID}",
+      "tls": {
+        "enabled": true,
+        "server_name": "{SINGBOX_DOMAIN}",
+        "reality": {
+          "enabled": true,
+          "public_key": "{SINGBOX_PUBLIC_KEY}",
+          "short_id": "{SINGBOX_SHORT_ID}"
+        },
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      },
+      "connect_timeout": "30s",
+      "multiplex": {
+        "enabled": false
+      },
+      "bind_interface": "enp2s0"
+    },
+    {
+      "type": "vless",
+      "tag": "racknerd-tcp-2053",
+      "server": "{SINGBOX_SERVER_IP}",
+      "server_port": 2053,
+      "flow": "xtls-rprx-vision",
+      "uuid": "{SINGBOX_UUID}",
+      "tls": {
+        "enabled": true,
+        "server_name": "{SINGBOX_DOMAIN}",
+        "reality": {
+          "enabled": true,
+          "public_key": "{SINGBOX_PUBLIC_KEY}",
+          "short_id": "{SINGBOX_SHORT_ID}"
+        },
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      },
+      "connect_timeout": "30s",
+      "multiplex": {
+        "enabled": false
+      },
+      "bind_interface": "enp2s0"
+    },
+    {
+      "type": "vless",
+      "tag": "racknerd-tcp-2083",
+      "server": "{SINGBOX_SERVER_IP}",
+      "server_port": 2083,
+      "flow": "xtls-rprx-vision",
+      "uuid": "{SINGBOX_UUID}",
+      "tls": {
+        "enabled": true,
+        "server_name": "{SINGBOX_DOMAIN}",
+        "reality": {
+          "enabled": true,
+          "public_key": "{SINGBOX_PUBLIC_KEY}",
+          "short_id": "{SINGBOX_SHORT_ID}"
+        },
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      },
+      "connect_timeout": "30s",
+      "multiplex": {
+        "enabled": false
+      },
+      "bind_interface": "enp2s0"
+    },
+    {
+      "type": "vless",
+      "tag": "racknerd-tcp-2087",
+      "server": "{SINGBOX_SERVER_IP}",
+      "server_port": 2087,
+      "flow": "xtls-rprx-vision",
+      "uuid": "{SINGBOX_UUID}",
+      "tls": {
+        "enabled": true,
+        "server_name": "{SINGBOX_DOMAIN}",
+        "reality": {
+          "enabled": true,
+          "public_key": "{SINGBOX_PUBLIC_KEY}",
+          "short_id": "{SINGBOX_SHORT_ID}"
+        },
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      },
+      "connect_timeout": "30s",
+      "multiplex": {
+        "enabled": false
+      },
+      "bind_interface": "enp2s0"
+    },
+    {
+      "type": "vless",
+      "tag": "racknerd-tcp-2096",
+      "server": "{SINGBOX_SERVER_IP}",
+      "server_port": 2096,
+      "flow": "xtls-rprx-vision",
+      "uuid": "{SINGBOX_UUID}",
+      "tls": {
+        "enabled": true,
+        "server_name": "{SINGBOX_DOMAIN}",
+        "reality": {
+          "enabled": true,
+          "public_key": "{SINGBOX_PUBLIC_KEY}",
+          "short_id": "{SINGBOX_SHORT_ID}"
+        },
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      },
+      "connect_timeout": "30s",
+      "multiplex": {
+        "enabled": false
+      },
+      "bind_interface": "enp2s0"
+    },
+    {
+      "type": "vless",
+      "tag": "racknerd-tcp-8080",
+      "server": "{SINGBOX_SERVER_IP}",
+      "server_port": 8080,
+      "flow": "xtls-rprx-vision",
+      "uuid": "{SINGBOX_UUID}",
+      "tls": {
+        "enabled": true,
+        "server_name": "{SINGBOX_DOMAIN}",
+        "reality": {
+          "enabled": true,
+          "public_key": "{SINGBOX_PUBLIC_KEY}",
+          "short_id": "{SINGBOX_SHORT_ID}"
+        },
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      },
+      "connect_timeout": "30s",
+      "multiplex": {
+        "enabled": false
+      },
+      "bind_interface": "enp2s0"
     },
     {
       "type": "hysteria2",
-      "tag": "racknerd",
+      "tag": "racknerd-udp-443",
       "server": "{SINGBOX_SERVER_IP}",
-      "server_port": 123,
+      "server_port": 443,
       "password": "af5317c8f52b509777b111ed04d20579",
+      "up_mbps": 10,
+      "down_mbps": 50,
       "tls": {
         "enabled": true,
         "insecure": true,
@@ -116,7 +282,142 @@
         "alpn": [
           "h3"
         ]
-      }
+      },
+      "bind_interface": "enp2s0"
+    },
+    {
+      "type": "hysteria2",
+      "tag": "racknerd-udp-8443",
+      "server": "{SINGBOX_SERVER_IP}",
+      "server_port": 8443,
+      "password": "af5317c8f52b509777b111ed04d20579",
+      "up_mbps": 10,
+      "down_mbps": 50,
+      "tls": {
+        "enabled": true,
+        "insecure": true,
+        "server_name": "hy2.jayyang.cn",
+        "alpn": [
+          "h3"
+        ]
+      },
+      "bind_interface": "enp2s0"
+    },
+    {
+      "type": "hysteria2",
+      "tag": "racknerd-udp-2053",
+      "server": "{SINGBOX_SERVER_IP}",
+      "server_port": 2053,
+      "password": "af5317c8f52b509777b111ed04d20579",
+      "up_mbps": 10,
+      "down_mbps": 50,
+      "tls": {
+        "enabled": true,
+        "insecure": true,
+        "server_name": "hy2.jayyang.cn",
+        "alpn": [
+          "h3"
+        ]
+      },
+      "bind_interface": "enp2s0"
+    },
+    {
+      "type": "hysteria2",
+      "tag": "racknerd-udp-2083",
+      "server": "{SINGBOX_SERVER_IP}",
+      "server_port": 2083,
+      "password": "af5317c8f52b509777b111ed04d20579",
+      "up_mbps": 10,
+      "down_mbps": 50,
+      "tls": {
+        "enabled": true,
+        "insecure": true,
+        "server_name": "hy2.jayyang.cn",
+        "alpn": [
+          "h3"
+        ]
+      },
+      "bind_interface": "enp2s0"
+    },
+    {
+      "type": "hysteria2",
+      "tag": "racknerd-udp-2087",
+      "server": "{SINGBOX_SERVER_IP}",
+      "server_port": 2087,
+      "password": "af5317c8f52b509777b111ed04d20579",
+      "up_mbps": 10,
+      "down_mbps": 50,
+      "tls": {
+        "enabled": true,
+        "insecure": true,
+        "server_name": "hy2.jayyang.cn",
+        "alpn": [
+          "h3"
+        ]
+      },
+      "bind_interface": "enp2s0"
+    },
+    {
+      "type": "hysteria2",
+      "tag": "racknerd-udp-2096",
+      "server": "{SINGBOX_SERVER_IP}",
+      "server_port": 2096,
+      "password": "af5317c8f52b509777b111ed04d20579",
+      "up_mbps": 10,
+      "down_mbps": 50,
+      "tls": {
+        "enabled": true,
+        "insecure": true,
+        "server_name": "hy2.jayyang.cn",
+        "alpn": [
+          "h3"
+        ]
+      },
+      "bind_interface": "enp2s0"
+    },
+    {
+      "type": "hysteria2",
+      "tag": "racknerd-udp-123",
+      "server": "{SINGBOX_SERVER_IP}",
+      "server_port": 123,
+      "password": "af5317c8f52b509777b111ed04d20579",
+      "up_mbps": 10,
+      "down_mbps": 50,
+      "tls": {
+        "enabled": true,
+        "insecure": true,
+        "server_name": "hy2.jayyang.cn",
+        "alpn": [
+          "h3"
+        ]
+      },
+      "bind_interface": "enp2s0"
+    },
+    {
+      "type": "selector",
+      "tag": "auto-selector-tcp",
+      "outbounds": [
+        "racknerd-tcp-443",
+        "racknerd-tcp-8443",
+        "racknerd-tcp-2053",
+        "racknerd-tcp-2083",
+        "racknerd-tcp-2087",
+        "racknerd-tcp-2096"
+      ],
+      "default": "racknerd-tcp-443"
+    },
+    {
+      "type": "selector",
+      "tag": "auto-selector-udp",
+      "outbounds": [
+        "racknerd-udp-443",
+        "racknerd-udp-8443",
+        "racknerd-udp-2053",
+        "racknerd-udp-2083",
+        "racknerd-udp-2087",
+        "racknerd-udp-2096"
+      ],
+      "default": "racknerd-udp-443"
     }
   ],
   "inbounds": [
@@ -138,91 +439,87 @@
       "tag": "tun-in",
       "interface_name": "sing-tun0",
       "address": [
-        "172.30.0.1/30"
+        "192.18.0.1/30"
       ],
-      "mtu": 1280,
+      "mtu": 1400,
       "auto_route": true,
       "auto_redirect": true,
+      "strict_route": false,
       "route_exclude_address": [
         "127.0.0.0/8",
         "10.0.0.0/8",
         "172.16.0.0/12",
         "192.168.0.0/16",
+        "192.18.0.1/30",
         "{SINGBOX_SERVER_IP}/32",
-        "8.137.160.254/32"
+        "8.137.160.254/32",
+        "223.5.5.5/32",
+        "223.6.6.6/32",
+        "8.8.8.8/32",
+        "1.1.1.1/32"
       ],
       "route_address": [
         "0.0.0.0/1",
         "128.0.0.0/1"
       ],
-      "stack": "system"
+      "stack": "gvisor"
     }
   ],
   "route": {
     "rule_set": [
       {
         "tag": "geosite-google",
-        "type": "remote",
+        "type": "local",
         "format": "binary",
-        "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-google.srs",
-        "download_detour": "racknerd",
-        "update_interval": "24h"
+        "path": "/usr/local/etc/sing-box/rule-set/geosite-google.srs"
       },
       {
         "tag": "geosite-youtube",
-        "type": "remote",
+        "type": "local",
         "format": "binary",
-        "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-youtube.srs",
-        "download_detour": "racknerd",
-        "update_interval": "24h"
+        "path": "/usr/local/etc/sing-box/rule-set/geosite-youtube.srs"
       },
       {
         "tag": "geosite-telegram",
-        "type": "remote",
+        "type": "local",
         "format": "binary",
-        "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-telegram.srs",
-        "download_detour": "racknerd",
-        "update_interval": "24h"
+        "path": "/usr/local/etc/sing-box/rule-set/geosite-telegram.srs"
       },
       {
         "tag": "geosite-discord",
-        "type": "remote",
+        "type": "local",
         "format": "binary",
-        "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-discord.srs",
-        "download_detour": "racknerd",
-        "update_interval": "24h"
+        "path": "/usr/local/etc/sing-box/rule-set/geosite-discord.srs"
       },
       {
         "tag": "geoip-google",
-        "type": "remote",
+        "type": "local",
         "format": "binary",
-        "url": "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@sing/geo/geoip/google.srs",
-        "download_detour": "racknerd",
-        "update_interval": "24h"
+        "path": "/usr/local/etc/sing-box/rule-set/geoip-google.srs"
       },
       {
         "tag": "geoip-telegram",
-        "type": "remote",
+        "type": "local",
         "format": "binary",
-        "url": "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@sing/geo/geoip/telegram.srs",
-        "download_detour": "racknerd",
-        "update_interval": "24h"
+        "path": "/usr/local/etc/sing-box/rule-set/geoip-telegram.srs"
       },
       {
         "tag": "geosite-cn",
-        "type": "remote",
+        "type": "local",
         "format": "binary",
-        "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geosite@rule-set/geosite-cn.srs",
-        "download_detour": "racknerd",
-        "update_interval": "24h"
+        "path": "/usr/local/etc/sing-box/rule-set/geosite-cn.srs"
       },
       {
         "tag": "geoip-cn",
-        "type": "remote",
+        "type": "local",
         "format": "binary",
-        "url": "https://cdn.jsdelivr.net/gh/SagerNet/sing-geoip@rule-set/geoip-cn.srs",
-        "download_detour": "racknerd",
-        "update_interval": "24h"
+        "path": "/usr/local/etc/sing-box/rule-set/geoip-cn.srs"
+      },
+      {
+        "tag": "geosite-openai",
+        "type": "local",
+        "format": "binary",
+        "path": "/usr/local/etc/sing-box/rule-set/geosite-openai.srs"
       }
     ],
     "rules": [
@@ -245,45 +542,50 @@
         "action": "hijack-dns"
       },
       {
-        "ip_cidr": [
-          "46.82.174.69/32",
-          "128.121.243.75/32"
-        ],
-        "action": "reject"
-      },
-      {
-        "ip_cidr": [
-          "207.148.109.122/32",
-          "{SINGBOX_SERVER_IP}/32",
-          "8.137.160.254/32"
-        ],
+        "ip_is_private": true,
         "action": "route",
         "outbound": "direct"
       },
       {
         "rule_set": [
-          "geoip-cn",
-          "geosite-cn"
+          "geosite-youtube"
         ],
         "action": "route",
-        "outbound": "direct"
+        "outbound": "auto-selector-udp"
       },
       {
-        "ip_is_private": true,
+        "rule_set": [
+          "geosite-google",
+          "geoip-google"
+        ],
+        "action": "route",
+        "outbound": "auto-selector-tcp"
+      },
+      {
+        "rule_set": [
+          "geosite-openai"
+        ],
+        "action": "route",
+        "outbound": "auto-selector-tcp"
+      },
+      {
+        "rule_set": [
+          "geosite-cn",
+          "geoip-cn"
+        ],
         "action": "route",
         "outbound": "direct"
       }
     ],
-    "final": "racknerd",
-    "auto_detect_interface": true,
+    "final": "auto-selector-tcp",
     "default_domain_resolver": {
-      "server": "dns-proxy",
+      "server": "dns-doh-cloudflare-tcp",
       "strategy": "ipv4_only"
     }
   },
   "experimental": {
     "cache_file": {
-      "enabled": true,
+      "enabled": false,
       "path": "cache.db"
     },
     "clash_api": {
