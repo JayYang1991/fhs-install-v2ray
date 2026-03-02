@@ -69,6 +69,12 @@
         "server": "dns-fakeip"
       },
       {
+        "query_type": [
+          "AAAA"
+        ],
+        "action": "reject"
+      },
+      {
         "rule_set": [
           "geosite-youtube"
         ],
@@ -439,7 +445,7 @@
       "tag": "tun-in",
       "interface_name": "sing-tun0",
       "address": [
-        "192.18.0.1/30"
+        "198.18.0.1/30"
       ],
       "mtu": 1400,
       "auto_route": true,
@@ -535,7 +541,7 @@
           "tun-in"
         ],
         "action": "sniff",
-        "timeout": "1000ms"
+        "timeout": "300ms"
       },
       {
         "protocol": "dns",
