@@ -109,73 +109,53 @@ bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/m
 4. **配置生成**：在线下载模板并生成 `/etc/sing-box/config.json`，同时输出客户端配置路径。
 5. **证书自动处理**：Hysteria2 证书固定使用 `/etc/cert/hy2_cert.pem` 与 `/etc/cert/hy2_key.pem`，不存在时自动生成自签名证书。
 
-### sing-box 链路监控与自动切换
+### sing-box 节点切换脚本 (`switch-singbox-proxy.sh`)
 
-仓库内提供了 sing-box 监控脚本与 systemd 服务文件：
+仓库提供了 `switch-singbox-proxy.sh` 脚本，用于通过 sing-box 的 Clash API 动态切换代理节点。支持自动优选（延迟最低）、切换至下一个节点或设置特定节点。
 
-- `monitor-singbox-failover.sh`：定时检测指定网站连通性，连续超时后调用 sing-box API 切换 selector 对应链路。
-- `monitor-singbox-failover.service`：将监控脚本作为 systemd 常驻服务运行（支持开机自启）。
-
-#### 监控脚本使用
+#### 基本用法
 
 ```bash
-bash monitor-singbox-failover.sh \
-  --url https://www.gstatic.com/generate_204 \
-  --api http://127.0.0.1:9090 \
-  --interval 15 \
-  --timeout 8 \
-  --threshold 2 \
-  --proxy http://127.0.0.1:7890
+# 自动选择并切换至延迟最低的节点（默认动作）
+bash switch-singbox-proxy.sh --api http://127.0.0.1:9090
+
+# 切换至组内下一个节点
+bash switch-singbox-proxy.sh --next
+
+# 切换至特定节点
+bash switch-singbox-proxy.sh --group "PROXY" --set "MyNodeName"
+
+# 查询当前组和节点信息
+bash switch-singbox-proxy.sh --list-groups
+bash switch-singbox-proxy.sh --group "PROXY" --list-nodes
 ```
 
-参数说明：
+#### 参数说明
 
-- `--url`：连通性检测地址（建议使用返回快速且稳定的 URL）。
-- `--api`：sing-box external controller 地址（Clash API 兼容）。
-- `--selector`：可选，指定要切换的 selector 名称（默认自动发现，优先 `PROXY`）。
-- `--chains`：可选，指定候选链路名称列表（逗号分隔）。默认自动读取 selector 的 `all` 列表。
-- `--interval`：检测间隔（秒）。
-- `--timeout`：单次检测超时时间（秒）。
-- `--threshold`：连续超时次数阈值，达到后执行一次切换。
-- `--proxy`：可选，检测请求使用的本地代理（如 `http://127.0.0.1:7890`）。
+- `--api`: sing-box external controller 地址（默认：`http://127.0.0.1:9090`）。
+- `--group`: 代理组名称（可选，为空时自动发现，优先使用 `PROXY` 组）。
+- `--best`: 自动测试延迟并切换至最优节点（默认行为）。
+- `--next`: 切换至组内的下一个节点。
+- `--set`: 手动切换至指定名称的节点。
+- `--test-url`: 延迟测试地址（默认：`https://www.gstatic.com/generate_204`）。
+- `--timeout-ms`: 测试超时时间（毫秒，默认：5000）。
 
-查询当前 sing-box 中的代理组及组内代理：
-
-```bash
-bash monitor-singbox-failover.sh --list-groups --api http://127.0.0.1:9090
-```
-
-#### systemd 部署
-
-```bash
-sudo cp monitor-singbox-failover.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable --now monitor-singbox-failover.service
-```
-
-查看运行状态与日志：
-
-```bash
-sudo systemctl status monitor-singbox-failover.service
-sudo journalctl -u monitor-singbox-failover.service -f
-sudo tail -f /var/log/singbox-failover.log
-```
-
-如需修改链路或参数，编辑 `/etc/systemd/system/monitor-singbox-failover.service` 的 `ExecStart`，然后重载并重启服务：
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl restart monitor-singbox-failover.service
-```
 
 ### 统一安装脚本
 
 V2Ray 相关安装统一由 `install-v2ray.sh` 处理，通过 `--mode` 参数选择不同的安装模式（`proxy-server` / `proxy-client` / `reverse-server` / `update-dat` / `--remove`）。
 
-```bash
-# 使用统一脚本安装
-# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) --mode <mode>
-```
+#### 常用选项
+
+| 选项 | 描述 |
+|------|------|
+| `--mode` | 安装模式（详见下方各模式说明） |
+| `--remove` | 卸载 V2Ray（所有模式均适用） |
+| `--version` | 安装特定版本的 V2Ray（例如 `--version v4.45.2`） |
+| `-c`, `--check` | 检查是否有新版本可更新 |
+| `-f`, `--force` | 强制重新安装最新版本（即使已经是最新） |
+| `-l`, `--local` | 从本地文件安装（例如 `-l /tmp/v2ray.zip`） |
+| `-p`, `--proxy` | 通过代理服务器下载（例如 `-p http://127.0.0.1:8118`） |
 
 #### 安装 V2Ray 代理服务端
 
@@ -265,25 +245,20 @@ export V2RAY_REVERSE_ID="your-reverse-id"
 # v2ray api stats --server="127.0.0.1:10085"
 ```
 
-## Vultr 自动化部署
+## 高级部署与辅助工具
 
-本项目提供了 Vultr 云服务器自动化部署脚本，可一键创建服务器并自动安装 sing-box（Reality）。
+### 1. 自动化 VPS 远程部署 (`setup_vps_server.sh`)
 
-### 前置条件
-
-### 1. 自动化 VPS 安装部署 (`setup_vps_server.sh`)
-
-该脚本是一个通用的 VPS 远程安装工具。它支持两种模式：
-1. **直接安装模式**：通过 IP 地址为任何云厂商（如阿里云、腾讯云、RackNerd 等）的 VPS 远程安装 Sing-box。
-2. **Vultr 自动创建模式**：使用 `vultr-cli` 自动创建实例、等待 IP 分配并完成安装。
+该脚本是一个通用的 VPS 远程安装工具。它支持通过 SSH 在远程 VPS 上一键安装 sing-box，并具备 Vultr 自动化创建功能。
 
 #### 使用方法
 
 ```bash
-# 模式 A：通过 IP 直接安装 (适用于已有 VPS)
+# 模式 A：通过 IP 直接远程安装 (适用于已有 VPS)
 bash setup_vps_server.sh --ip 8.137.160.254
 
 # 模式 B：Vultr 自动创建并安装
+# 需要本地已安装并配置好 vultr-cli
 bash setup_vps_server.sh --vultr
 
 # 可选参数示例：
@@ -294,119 +269,25 @@ bash setup_vps_server.sh --ip 1.2.3.4 --user myuser --force
 
 ### 2. FRP 服务端一键安装 (`install-frp.sh`)
 
-该脚本用于在 Linux 服务器上一键部署 FRP 服务端 (frps)。
-
-#### 使用方法
+用于在 Linux 服务器上部署 FRP 服务端 (frps)，支持 HTTPS 穿透。
 
 ```bash
-# 默认安装 (随机生成 Token，监听 7000 和 443 端口)
+# 默认安装
 bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-frp.sh)
-
-# 指定端口与 Token
-bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-frp.sh) --port 7001 --vhost-https 444 --token mypassword123
 ```
 
-**脚本功能**：
-- 自动识别架构 (amd64/arm64)。
-- 自动从 GitHub 下载最新版本。
-- 自动生成 16 位随机安全令牌。
-- **HTTPS 穿透支持**：默认监听 443 端口作为 HTTPS 入口，支持域名分发。
-- **自动引导配置**：安装完成后自动输出针对内网 Nginx 承载多域名的 `frpc.toml` 示例。
-- 自动创建并启动 `frps.service` (Systemd)。
+### 3. 离线安装包构建脚本
 
-#### 进阶场景：内网多域名分发
-若您在内网由一台 Nginx 服务器分发多个域名，只需在内网 `frpc` 中配置一个 `https` 类型的代理，并将所有域名加入 `customDomains` 列表，转发至内网 Nginx 的 443 端口即可。
- --help
+用于在有网环境下下载所有依赖并打包成离线安装包，以便在无网服务器上安装。
 
-# 创建实例并安装 sing-box
-# ./create_vultr_instance.sh
-**脚本功能**：
-- 自动检测并安装依赖 (`vultr-cli`, `curl` 等)
-- 自动创建 Vultr 实例（默认配置：Ubuntu 24.04，1核 0.5GB）
-- 支持 IPv4 和 IPv6 地址自动提取
-- 等待实例启动并检测 SSH 连接（严格校验 root 登录及稳定性）
-- 自动在远程服务器安装 **sing-box** (含 Reality 配置)
-- 自动从远端客户端配置中提取 UUID、Reality 公钥和 Short ID
+- `build-offline-singbox.sh`: 构建 sing-box 离线安装包。
+- `build-offline-v2ray.sh`: 构建 V2Ray 离线安装包。
 
-**自定义配置**：
-可以通过设置环境变量或命令行参数修改以下变量：
-- `VULTR_REGION`: 数据中心区域（默认：ewr）
-- `VULTR_PLAN`: 实例规格（默认：vc2-1c-0.5gb-v6）
-- `VULTR_OS`: 操作系统 ID（默认：2288，Ubuntu 24.04）
-- `VULTR_HOST`: 实例主机名（默认：jayyang）
-- `VULTR_LABEL`: 实例标签（默认：ubuntu_2404）
-- `VULTR_TAG`: 实例标签（TAG）（默认：v2ray）
-- `VULTR_SSH_KEYS`: SSH 密钥 ID 列表（逗号分隔）
-- `VULTR_SCRIPT_ID`: 启动脚本 ID
-- `V2RAY_REPO_BRANCH`: 脚本仓库分支（默认：master）
-- `SINGBOX_PORT`: sing-box 监听端口（默认：443）
-- `SINGBOX_DOMAIN`: sing-box SNI 域名 (Reality 目标)（默认：www.cloudflare.com）
-- `SINGBOX_UUID`: sing-box 用户 UUID
-- `SINGBOX_SHORT_ID`: sing-box Reality Short ID
-- `SINGBOX_LOG_LEVEL`: sing-box 日志级别
-- `SINGBOX_HY2_PORT`: Hysteria2 监听端口（默认：123）
-- `SINGBOX_HY2_DOMAIN`: Hysteria2 TLS 域名（默认：hy2.jayyang.cn）
-- `SINGBOX_HY2_PASSWORD`: Hysteria2 用户密码（默认：自动生成）
-- `SINGBOX_HY2_UP_MBPS`: Hysteria2 上行带宽 Mbps（默认：200）
-- `SINGBOX_HY2_DOWN_MBPS`: Hysteria2 下行带宽 Mbps（默认：200）
-- `SINGBOX_HY2_MASQUERADE`: Hysteria2 伪装地址（默认：https://www.cloudflare.com）
-- `SINGBOX_HY2_CERT_PATH`: Hysteria2 证书路径（固定：`/etc/cert/hy2_cert.pem`）
-- `SINGBOX_HY2_KEY_PATH`: Hysteria2 私钥路径（固定：`/etc/cert/hy2_key.pem`）
+### 4. 其它辅助脚本
 
-### 删除实例
-
-```bash
-# ./remove_vultr_instance.sh
-```
-
-## 安装标准版 V2Ray
-
-```bash
-// 安装标准版 V2Ray（默认模式）
-# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh)
-```
-
-## 安装特定版本的 V2Ray
-
-```bash
-// 安装指定版本的 V2Ray
-# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) --version v4.18.0
-```
-
-## 检查 V2Ray 更新
-
-```bash
-// 检查是否有新版本
-# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) -c
-```
-
-## 强制安装最新版 V2Ray
-
-```bash
-// 强制安装最新版本（即使已经是最新）
-# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) -f
-```
-
-## 从本地文件安装 V2Ray
-
-```bash
-// 从本地文件安装 V2Ray
-# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) -l /path/to/v2ray.zip
-```
-
-## 使用代理服务器下载
-
-```bash
-// 通过代理服务器下载
-# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) -p http://127.0.0.1:8118
-```
-
-## 安装 V2Ray 的帮助信息
-
-```bash
-// 查看安装脚本的帮助信息
-# bash <(curl -L https://raw.githubusercontent.com/JayYang1991/fhs-install-v2ray/master/install-v2ray.sh) --help
-```
+- `download-singbox-rules.sh`: 下载最新的 sing-box 规则集 (`.srs`)。
+- `generate-singbox-hysteria2-config.sh`: 生成 Hysteria2 服务端与客户端配置文件及自签名证书。
+- `remove_vultr_instance.sh`: 快速删除 Vultr 实例。
 
 ## 配置工具
 
