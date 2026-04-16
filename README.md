@@ -245,6 +245,33 @@ export V2RAY_REVERSE_ID="your-reverse-id"
 # v2ray api stats --server="127.0.0.1:10085"
 ```
 
+### 4. Cloudflare Workers 测速后端 (`speedtest-worker.js`)
+
+本项目包含一个精简的 Cloudflare Workers 脚本，专门为 [CloudflareSpeedTest (cfst)](https://github.com/XIU2/CloudflareSpeedTest) 等 CLI 工具优化的测速后端。
+
+#### 部署步骤
+
+1. **登录 Cloudflare**：进入 [Cloudflare Dashboard](https://dash.cloudflare.com/)。
+2. **创建 Worker**：在侧边栏选择 "Workers & Pages" -> "Create application" -> "Create Worker"。
+3. **命名并部署**：给你的 Worker 起个名字（如 `my-speedtest`），点击 "Deploy"。
+4. **编辑代码**：点击 "Edit code"，将编辑器中的所有代码替换为本项目中的 `speedtest-worker.js` 内容。
+5. **保存并部署**：点击右上角的 "Save and deploy"。
+
+#### CLI 工具使用教程
+
+你可以使用部署好的 Worker URL 作为测速地址进行 IP 优选：
+
+```bash
+# 使用 CloudflareSpeedTest 进行下载测速
+./CloudflareST -url https://your-worker-name.workers.dev/__down?bytes=100000000
+```
+
+**功能特性：**
+- **高性能流传输**：采用 `ReadableStream` 技术，支持大规模数据下载测试而不占用 Worker 内存。
+- **参数兼容**：完全支持 `?bytes=` 参数，适配各种测速工具。
+- **节点识别**：根目录 `/` 和 `/cdn-cgi/trace` 均返回标准节点信息（Colo, IP, Location）。
+- **极简设计**：移除了所有前端 UI，仅保留核心测速 API，响应更迅速。
+
 ## 高级部署与辅助工具
 
 ### 1. 自动化 VPS 远程部署 (`setup_vps_server.sh`)
@@ -330,6 +357,23 @@ python3 sb_to_clash.py
 
 # 使用具体命名参数
 python3 sb_to_clash.py -i /path/to/singbox.json -o /path/to/output.yaml
+```
+
+#### 3. `update_cloudflare_ips.py` (Cloudflare 优选 IP 自动化)
+该工具集成 [CloudflareSpeedTest (cfst)](https://github.com/XIU2/CloudflareSpeedTest) 功能，实现对 Cloudflare IP 的自动测速与配置更新。
+
+**特性：**
+- **智能合并**：从本地 `cucc-ip.txt` 和现有 Sing-box 配置文件中自动提取并合并 IPv4 地址。
+- **自动优选**：调用 `cfst` 工具执行 HTTPing 测速，精准筛选低延迟 IP。
+- **自动更新**：自动提取最优的前 15 个 IP，并按顺序更新到 Sing-box 配置文件中标签为 `cloudflare1` 到 `cloudflare15` 的条目。
+
+**使用方法：**
+```bash
+# 默认模式 (读取 /etc/singbox/config.json, 在当前目录生成新配置)
+python3 update_cloudflare_ips.py
+
+# 自定义路径
+python3 update_cloudflare_ips.py /path/to/origin.json /path/to/output.json
 ```
 
 #### 示例
