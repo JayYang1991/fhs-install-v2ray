@@ -8,10 +8,11 @@ import copy
 
 # ================= 配置部分 =================
 # 默认输入文件路径
-CUCC_IP_FILE = os.getenv("CUCC_IP_FILE", os.path.expanduser("~/user_data/tools/BestCF/cucc-ip.txt"))
+BESTCF_DIR = os.path.expanduser("~/user_data/tools/BestCF")
+CUCC_IP_FILE = os.getenv("CUCC_IP_FILE", os.path.join(BESTCF_DIR, "cucc-ip.txt"))
 
-# 优先查找当前目录的 config.json，找不到再找 /etc/singbox/config.json
-DEFAULT_CONFIG_PATH = "./config.json" if os.path.exists("./config.json") else "/etc/singbox/config.json"
+# 优先查找当前目录的 config.json，找不到再找 /etc/sing-box/config.json
+DEFAULT_CONFIG_PATH = "./config.json" if os.path.exists("./config.json") else "/etc/sing-box/config.json"
 CONFIG_JSON_FILE = os.getenv("CONFIG_JSON_FILE", DEFAULT_CONFIG_PATH)
 
 # 默认输出文件路径
@@ -63,7 +64,7 @@ def load_text_ips(file_path):
     return ips
 
 def extract_ips_from_config(config_path):
-    """从 singbox 配置文件提取 outbound 中 443 端口的 IP"""
+    """从 sing-box 配置文件提取 outbound 中 443 端口的 IP"""
     ips = set()
     if not os.path.exists(config_path):
         print(f"Warning: {config_path} 不存在。")
@@ -92,6 +93,7 @@ def run_cfst(ip_file):
         "cfst",
         "-f", ip_file,
         "-tp", "443",
+        "-url", "https://speed.19910417.xyz/__down?bytes=100000000",
         "-httping",
         "-allip",
         "-n", "1000",
@@ -166,7 +168,7 @@ def extract_ips_from_csv(file_path):
     return ips
 
 def update_singbox_config(original_config_path, new_ips, output_path):
-    """更新配置文件中 443 端口且为 IPv4 的 IP，并支持扩展和更新 auto-selector-tcp"""
+    """更新配置文件中 443 端口且为 IPv4 的 IP，并支持扩展和更新 urltest-selector-tcp"""
     if not os.path.exists(original_config_path):
         print(f"Error: 找不到原始配置文件 {original_config_path}")
         return
@@ -193,7 +195,7 @@ def update_singbox_config(original_config_path, new_ips, output_path):
 
         for i, ob in enumerate(outbounds):
             tag = ob.get('tag', '')
-            if tag == "auto-selector-tcp":
+            if tag == "urltest-selector-tcp":
                 selector_index = i
                 continue
                 
@@ -239,12 +241,12 @@ def update_singbox_config(original_config_path, new_ips, output_path):
             else:
                 outbounds.extend(new_outbounds)
         
-        # 4. 重新扫描所有 cloudflare 标签并更新 auto-selector-tcp
+        # 4. 重新扫描所有 cloudflare 标签并更新 urltest-selector-tcp
         all_cf_tags = [ob.get('tag') for ob in outbounds if ob.get('tag', '').startswith(TAG_PREFIX)]
         all_cf_tags.sort(key=lambda x: int(x[len(TAG_PREFIX):]) if x[len(TAG_PREFIX):].isdigit() else 9999)
         
         for ob in outbounds:
-            if ob.get('tag') == "auto-selector-tcp":
+            if ob.get('tag') == "urltest-selector-tcp":
                 ob['outbounds'] = all_cf_tags
                 break
         
@@ -258,7 +260,50 @@ def update_singbox_config(original_config_path, new_ips, output_path):
         import traceback
         traceback.print_exc()
 
+def update_bestcf_repo():
+    """更新 BestCF 仓库"""
+    if not os.path.exists(BESTCF_DIR):
+        print(f"Warning: BestCF 目录不存在 ({BESTCF_DIR})，跳过更新。")
+        return
+
+    print(f"正在尝试更新 BestCF 仓库: {BESTCF_DIR}...")
+    try:
+        # 使用 -C 指定目录执行 git pull
+        result = subprocess.run(
+            ["git", "-C", BESTCF_DIR, "pull"],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        if result.returncode == 0:
+            print("BestCF 仓库更新成功。")
+            if "Already up to date" not in result.stdout:
+                print(f"Git 输出: {result.stdout.strip()}")
+        else:
+            print(f"Warning: git pull 失败 (退出码 {result.returncode})。")
+            print(f"错误详情: {result.stderr.strip()}")
+    except subprocess.TimeoutExpired:
+        print("Warning: git pull 超时，跳过。")
+    except Exception as e:
+        print(f"Warning: 更新仓库时出错: {e}")
+
+def manage_singbox_service(action):
+    """使用 sudo systemctl 管理 sing-box 服务"""
+    if action not in ["stop", "start"]:
+        return
+    
+    print(f"正在执行: sudo systemctl {action} sing-box...")
+    try:
+        subprocess.run(["sudo", "systemctl", action, "sing-box"], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"管理 sing-box 服务失败 ({action}): {e}")
+    except FileNotFoundError:
+        print("错误: 未找到 systemctl 命令。")
+
 def main():
+    # 0. 更新仓库
+    update_bestcf_repo()
+
     # 1. 加载并合并 IP
     print("正在收集 IP 地址...")
     ips = load_text_ips(CUCC_IP_FILE)
@@ -279,19 +324,24 @@ def main():
     print(f"合并后的 IP 已保存至: {MERGED_IP_FILE} (共 {len(ips)} 个)")
 
     # 2. 运行 cfst
-    if run_cfst(MERGED_IP_FILE):
-        # 3. 提取最优 IP (增加速度过滤)
-        top_ips = get_top_ips(RESULT_CSV_FILE, MAX_TAGS, MIN_SPEED)
-        if not top_ips:
-            print(f"未提取到下载速度大于 {MIN_SPEED} MB/s 的优选 IP，退出。")
-            sys.exit(1)
-        
-        print(f"提取到前 {len(top_ips)} 个速度 > {MIN_SPEED} MB/s 的最优 IP: {', '.join(top_ips[:3])}...")
-        
-        # 4. 更新配置
-        update_singbox_config(CONFIG_JSON_FILE, top_ips, NEW_CONFIG_JSON_FILE)
-    else:
-        print("优选测试失败，未更新配置。")
+    # 在运行 cfst 之前关闭服务
+    manage_singbox_service("stop")
+    try:
+        if run_cfst(MERGED_IP_FILE):
+            # 3. 提取最优 IP (增加速度过滤)
+            top_ips = get_top_ips(RESULT_CSV_FILE, MAX_TAGS, MIN_SPEED)
+            if not top_ips:
+                print(f"未提取到下载速度大于 {MIN_SPEED} MB/s 的优选 IP，未更新配置。")
+            else:
+                print(f"提取到前 {len(top_ips)} 个速度 > {MIN_SPEED} MB/s 的最优 IP: {', '.join(top_ips[:3])}...")
+                
+                # 4. 更新配置
+                update_singbox_config(CONFIG_JSON_FILE, top_ips, NEW_CONFIG_JSON_FILE)
+        else:
+            print("优选测试失败，未更新配置。")
+    finally:
+        # 无论成功与否，最后都重新开启服务
+        manage_singbox_service("start")
 
 if __name__ == "__main__":
     # 允许通过命令行参数重写路径（可选）

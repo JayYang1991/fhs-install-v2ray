@@ -266,9 +266,39 @@ export V2RAY_REVERSE_ID="your-reverse-id"
 ./CloudflareST -url https://your-worker-name.workers.dev/__down?bytes=100000000
 ```
 
+#### sing-box 配合用法
+
+**1. 作为延迟测试 (urltest) 地址**
+
+在 sing-box 配置文件的 `outbounds` 中，你可以将该 Worker 用于 `urltest` 类型的出站节点，以实现自动选路：
+
+```json
+{
+  "type": "urltest",
+  "tag": "auto-select",
+  "outbounds": ["proxy1", "proxy2"],
+  "url": "https://your-worker-name.workers.dev/generate_204",
+  "interval": "1m0s",
+  "tolerance": 50
+}
+```
+
+**2. 手动通过代理进行下载测速**
+
+如果你想测试某个代理节点通过该 Worker 的实际下载带宽，可以使用 `curl` 配合代理：
+
+```bash
+# 假设你的 sing-box 开启了 7890 端口的混合代理
+curl -x http://127.0.0.1:7890 -L "https://your-worker-name.workers.dev/__down?bytes=50000000" -o /dev/null
+```
+
 **功能特性：**
 - **高性能流传输**：采用 `ReadableStream` 技术，支持大规模数据下载测试而不占用 Worker 内存。
 - **参数兼容**：完全支持 `?bytes=` 参数，适配各种测速工具。
+- **多端点支持**：
+    - `/generate_204`: 返回 204 No Content，非常适合 sing-box 的 `urltest`。
+    - `/cdn-cgi/trace` 或 `/`: 返回详细的节点信息，可验证代理 IP 是否生效。
+    - `/__down`: 流式下载，用于带宽压力测试。
 - **节点识别**：根目录 `/` 和 `/cdn-cgi/trace` 均返回标准节点信息（Colo, IP, Location）。
 - **极简设计**：移除了所有前端 UI，仅保留核心测速 API，响应更迅速。
 

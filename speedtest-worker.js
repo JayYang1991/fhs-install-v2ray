@@ -48,23 +48,36 @@ export default {
       });
     }
 
+    // Endpoint for latency test (Google style)
+    if (url.pathname === '/generate_204' || url.pathname === '/204') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        }
+      });
+    }
+
     // Endpoint for CloudflareTrace compatibility
     if (url.pathname === '/cdn-cgi/trace' || url.pathname === '/') {
       const trace = [
         `fl=${request.cf?.asOrganization || 'Cloudflare'}`,
         `h=${url.hostname}`,
         `ip=${request.headers.get('cf-connecting-ip')}`,
-        `ts=${Date.now() / 1000}`,
+        `ts=${(Date.now() / 1000).toFixed(3)}`,
         `visit_scheme=${url.protocol.replace(':', '')}`,
         `uag=${request.headers.get('user-agent')}`,
         `colo=${request.cf?.colo || 'UNK'}`,
         `sliver=none`,
-        `http=http/2`,
+        `http=${request.cf?.httpProtocol || 'http/2'}`,
         `loc=${request.headers.get('cf-ipcountry') || 'XX'}`,
-        `tls=TLSv1.3`,
+        `tls=${request.cf?.tlsVersion || 'TLSv1.3'}`,
         `sni=plaintext`,
         `warp=off`,
         `gateway=off`,
+        `client_ip=${request.headers.get('cf-connecting-ip')}`,
+        `user_agent=${request.headers.get('user-agent')}`,
       ].join('\n') + '\n';
       
       return new Response(trace, {
