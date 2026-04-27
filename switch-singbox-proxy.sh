@@ -11,11 +11,8 @@ API_BASE='http://127.0.0.1:9090'
 GROUP_NAME=''
 # Target node name for manual set
 TARGET_NODE=''
-# Action: best | next | set | list-groups | list-nodes | show
-ACTION='best'
-# Delay test target URL and timeout(ms)
-TEST_URL="${TEST_URL:-https://www.gstatic.com/generate_204}"
-TEST_TIMEOUT_MS="${TEST_TIMEOUT_MS:-5000}"
+# Action: next | set | list-groups | list-nodes | show
+ACTION='next'
 
 red=$(tput setaf 1)
 green=$(tput setaf 2)
@@ -25,18 +22,14 @@ reset=$(tput sgr0)
 usage() {
   cat << USAGE
 Usage:
-  # Auto-select and switch to the lowest-latency node in group (default action)
-  bash switch-singbox-proxy.sh [--api <controller_url>] [--group <group_name>] [--best]
-
-  # Switch to next node in group
+  # Switch to next node in group (default action)
   bash switch-singbox-proxy.sh [--api <controller_url>] [--group <group_name>] [--next]
 
   # Switch to a specific node in group
   bash switch-singbox-proxy.sh [--api <controller_url>] --group <group_name> --set <node_name>
 
-  # Tune delay probing
-  bash switch-singbox-proxy.sh [--api <controller_url>] [--group <group_name>] --best \
-    [--test-url <url>] [--timeout-ms <ms>]
+  # Switch to the best node (lowest delay) in group
+  bash switch-singbox-proxy.sh [--api <controller_url>] [--group <group_name>] --best
 
   # Query groups/nodes
   bash switch-singbox-proxy.sh [--api <controller_url>] --list-groups
@@ -45,8 +38,6 @@ Usage:
 
 Default:
   --api http://127.0.0.1:9090
-  --test-url https://www.gstatic.com/generate_204
-  --timeout-ms 5000
 USAGE
 }
 
@@ -60,6 +51,11 @@ log_ok() {
 
 log_error() {
   echo "${red}error:${reset} $*"
+}
+
+# URL encode a string using python3
+urlencode() {
+  python3 -c "import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))" "$1"
 }
 
 # curl wrapper with retry defaults.
@@ -88,7 +84,7 @@ parse_args() {
         ACTION='next'
         shift 1
         ;;
-      --best | --auto)
+      --best)
         ACTION='best'
         shift 1
         ;;
@@ -104,14 +100,6 @@ parse_args() {
         ACTION='show'
         shift 1
         ;;
-      --test-url)
-        TEST_URL="$2"
-        shift 2
-        ;;
-      --timeout-ms)
-        TEST_TIMEOUT_MS="$2"
-        shift 2
-        ;;
       -h | --help)
         usage
         exit 0
@@ -126,11 +114,6 @@ parse_args() {
 }
 
 validate_args() {
-  if ! [[ "$TEST_TIMEOUT_MS" =~ ^[0-9]+$ ]] || [[ "$TEST_TIMEOUT_MS" -le 0 ]]; then
-    log_error "--timeout-ms must be a positive integer, got '${TEST_TIMEOUT_MS}'"
-    exit 1
-  fi
-
   case "$ACTION" in
     set)
       if [[ -z "$GROUP_NAME" || -z "$TARGET_NODE" ]]; then
@@ -144,84 +127,12 @@ validate_args() {
         exit 1
       fi
       ;;
-    best | next | show | list-groups) ;;
+    next | best | show | list-groups) ;;
     *)
       log_error "unsupported action: $ACTION"
       exit 1
       ;;
   esac
-}
-
-urlencode_component() {
-  python3 - "$1" << 'PY'
-import sys
-import urllib.parse
-
-print(urllib.parse.quote(sys.argv[1], safe=''))
-PY
-}
-
-probe_node_delay() {
-  local node="$1"
-  local node_encoded test_url_encoded api_url resp
-  node_encoded="$(urlencode_component "$node")"
-  test_url_encoded="$(urlencode_component "$TEST_URL")"
-  api_url="${API_BASE%/}/proxies/${node_encoded}/delay?url=${test_url_encoded}&timeout=${TEST_TIMEOUT_MS}"
-
-  if ! resp="$(curl_with_retry -sS -f "$api_url" 2> /dev/null)"; then
-    return 1
-  fi
-
-  RESP_JSON="$resp" python3 - << 'PY'
-import json
-import os
-import sys
-
-try:
-    body = json.loads(os.environ['RESP_JSON'])
-except Exception:
-    sys.exit(2)
-
-delay = body.get('delay')
-if isinstance(delay, int) and delay >= 0:
-    print(delay)
-    sys.exit(0)
-sys.exit(3)
-PY
-}
-
-select_best_node_by_delay() {
-  local node node_delay best_node='' best_delay=''
-  local -a nodes
-
-  if [[ -z "$GROUP_NODES" ]]; then
-    log_error 'group node list is empty'
-    return 1
-  fi
-
-  IFS='|' read -r -a nodes <<< "$GROUP_NODES"
-  log_info "probing group '${GROUP_NAME}' nodes (url=${TEST_URL}, timeout=${TEST_TIMEOUT_MS}ms)"
-
-  for node in "${nodes[@]}"; do
-    if node_delay="$(probe_node_delay "$node")"; then
-      log_info "node '${node}' delay=${node_delay}ms"
-      if [[ -z "$best_delay" || "$node_delay" -lt "$best_delay" ]]; then
-        best_delay="$node_delay"
-        best_node="$node"
-      fi
-    else
-      log_info "node '${node}' delay probe failed"
-    fi
-  done
-
-  if [[ -z "$best_node" ]]; then
-    log_error "all node delay probes failed in group '${GROUP_NAME}'"
-    return 1
-  fi
-
-  TARGET_NODE="$best_node"
-  log_ok "best node='${TARGET_NODE}', delay=${best_delay}ms"
-  return 0
 }
 
 fetch_proxies_json() {
@@ -420,8 +331,9 @@ list_nodes_in_group() {
 }
 
 switch_group_to_node() {
-  local api_url request_body
-  api_url="${API_BASE%/}/proxies/$(urlencode_component "$GROUP_NAME")"
+  local api_url request_body encoded_group
+  encoded_group=$(urlencode "$GROUP_NAME")
+  api_url="${API_BASE%/}/proxies/${encoded_group}"
   request_body="{\"name\":\"${TARGET_NODE}\"}"
 
   if curl_with_retry -sS -f -X PUT "$api_url" \
@@ -433,6 +345,72 @@ switch_group_to_node() {
 
   log_error "failed to switch group '${GROUP_NAME}' to '${TARGET_NODE}'"
   return 1
+}
+
+find_best_node() {
+  local output parse_status
+  log_info "finding best node in group '${GROUP_NAME}' (testing ${#NODE_ARRAY[@]} nodes)..."
+
+  output="$(
+    API_BASE="$API_BASE" GROUP_NODES="$GROUP_NODES" python3 - << 'PY'
+import json
+import os
+import sys
+import urllib.request
+import urllib.parse
+import concurrent.futures
+
+api_base = os.environ.get('API_BASE', '').rstrip('/')
+nodes = os.environ.get('GROUP_NODES', '').split('|')
+nodes = [n for n in nodes if n]
+
+def get_delay(node):
+    encoded_node = urllib.parse.quote(node)
+    # Use a common connectivity check URL
+    test_url = "http://www.gstatic.com/generate_204"
+    api_url = f"{api_base}/proxies/{encoded_node}/delay?timeout=2000&url={urllib.parse.quote(test_url)}"
+    try:
+        req = urllib.request.Request(api_url)
+        with urllib.request.urlopen(req, timeout=3) as response:
+            data = json.loads(response.read().decode())
+            delay = data.get('delay', 999999)
+            if delay == 0: delay = 999999
+            return node, delay
+    except Exception:
+        return node, 999999
+
+best_node = None
+min_delay = 999998
+
+with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+    future_to_node = {executor.submit(get_delay, node): node for node in nodes}
+    for future in concurrent.futures.as_completed(future_to_node):
+        node, delay = future.result()
+        if delay < 999999:
+            print(f"DEBUG: {node} -> {delay}ms", file=sys.stderr)
+        if delay < min_delay:
+            min_delay = delay
+            best_node = node
+
+if best_node:
+    print(best_node)
+    sys.exit(0)
+else:
+    print("ERROR=no reachable nodes found")
+    sys.exit(1)
+PY
+  )"
+  parse_status=$?
+
+  if [[ "$parse_status" -ne 0 ]]; then
+    log_error "failed to find best node: $output"
+    return 1
+  fi
+
+  # Extract the last line as the node name, others might be DEBUG logs
+  TARGET_NODE=$(echo "$output" | tail -n 1)
+  log_info "best node found: ${TARGET_NODE}"
+  return 0
 }
 
 main() {
@@ -464,16 +442,17 @@ main() {
       log_info "next: $GROUP_NEXT"
       list_nodes_in_group
       ;;
-    best)
-      select_best_node_by_delay
-      switch_group_to_node
-      ;;
     set)
       switch_group_to_node
       ;;
     next)
       TARGET_NODE="$GROUP_NEXT"
       log_info "current='${GROUP_CURRENT:--}', switching to next='${TARGET_NODE}'"
+      switch_group_to_node
+      ;;
+    best)
+      IFS='|' read -r -a NODE_ARRAY <<< "$GROUP_NODES"
+      find_best_node || exit 1
       switch_group_to_node
       ;;
   esac
